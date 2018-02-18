@@ -13,10 +13,10 @@ void print_usage();
 int* parse_cmd_line_args(int argc, char *argv[]);
 
 int main (int argc, char *argv[]) {
-	int n = 10;							// Default number of consumers
-	int* num_consumers = &n;			// Number of consumers to fork
-	int proc_count = 0;					// Number of concurrent children
-	pid_t childpid = 0;					// Child process ID
+    int n = 10;                         // Default number of consumers
+    int* num_consumers = &n;            // Number of consumers to fork
+    int proc_count = 0;                 // Number of concurrent children
+    pid_t childpid = 0;                 // Child process ID
 
     num_consumers = parse_cmd_line_args(argc, argv);
 
@@ -30,9 +30,9 @@ int main (int argc, char *argv[]) {
 
         if ((childpid = fork()) == 0) {
             // Child so...
-        	printf("hello from child!\n");
-        	printf("proc count: %d, pid: %d\n", proc_count, getpid());
-        	break;
+            printf("hello from child!\n");
+            printf("proc count: %d, pid: %d\n", proc_count, getpid());
+            break;
         }
 
         if (childpid == -1) {
