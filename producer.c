@@ -4,7 +4,7 @@
 
 int main (int argc, char *argv[]) {
 
-	printf("hello world!");
+	printf("hello from producer!\n");
 
 	// Randomly wake up and check if a buffer is free
 

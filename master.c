@@ -17,6 +17,10 @@ int main (int argc, char *argv[]) {
     int* num_consumers = &n;            // Number of consumers to fork
     int proc_count = 0;                 // Number of concurrent children
     pid_t childpid = 0;                 // Child process ID
+    int one_producer = 0;               // True if exec'd one producer
+
+    char* program[2];
+    program[1] = NULL;
 
     num_consumers = parse_cmd_line_args(argc, argv);
 
@@ -30,9 +34,17 @@ int main (int argc, char *argv[]) {
 
         if ((childpid = fork()) == 0) {
             // Child so...
-            printf("hello from child!\n");
-            printf("proc count: %d, pid: %d\n", proc_count, getpid());
-            break;
+            if (one_producer) {
+                program[0] = "./consumer";
+            }
+            else {
+                program[0] = "./producer";
+            }
+
+            execvp(program[0], program);
+
+            perror("Child failed to execvp the command!");
+            return EXIT_FAILURE;
         }
 
         if (childpid == -1) {
@@ -40,6 +52,7 @@ int main (int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
 
+        one_producer = 1;
         proc_count += 1; // increment because we forked
 
         if (waitpid(-1, NULL, WNOHANG) > 0) {
