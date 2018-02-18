@@ -6,6 +6,8 @@
 #include <sys/wait.h>
 #include <ctype.h>
 #include <getopt.h>
+#include <sys/shm.h>
+#include <sys/stat.h>
 
 const int PROC_LIMIT = 20;
 
@@ -21,6 +23,29 @@ int main (int argc, char *argv[]) {
 
     char* program[2];
     program[1] = NULL;
+
+    key_t key = 1;
+    struct shmid_ds shmbuffer;
+    char* shared_memory;
+    int segment_size;
+
+    int segment_id = shmget(IPC_PRIVATE, getpagesize(), IPC_CREAT | S_IRUSR | S_IWUSR); // children inherit shmem segments
+
+    /* Attach the shared memory segment. */
+    shared_memory = (char*)shmat(segment_id, 0, 0);
+    if (!shared_memory) { /* operation failed. */
+        perror("shmat: ");
+        exit(1);
+    }
+    printf("shared memory attached at address %p\n", shared_memory);
+
+    /* Determine the segment’s size. */
+    shmctl(segment_id, IPC_STAT, &shmbuffer);
+    segment_size = shmbuffer.shm_segsz;
+    printf("segment size: %d\n", segment_size);
+
+    /* Write a string to the shared memory segment. */
+    sprintf(shared_memory, "Hello, world.");
 
     num_consumers = parse_cmd_line_args(argc, argv);
 
@@ -44,12 +69,12 @@ int main (int argc, char *argv[]) {
             execvp(program[0], program);
 
             perror("Child failed to execvp the command!");
-            return EXIT_FAILURE;
+            return 1;
         }
 
         if (childpid == -1) {
             perror("Child failed to fork!\n");
-            return EXIT_FAILURE;
+            return 1;
         }
 
         one_producer = 1;
@@ -66,9 +91,16 @@ int main (int argc, char *argv[]) {
         while (wait(NULL) > 0); // wait for all children
     }
 
+    /* Print out the string from shared memory. */
+    printf("%s\n", shared_memory);
+    /* Detach the shared memory segment. */
+    shmdt(shared_memory);
+    /* Deallocate the shared memory segment. */
+    shmctl(segment_id, IPC_RMID, 0);
+
     free(num_consumers);
 
-    return EXIT_SUCCESS;
+    return 0;
 
 }
 
@@ -94,5 +126,5 @@ int* parse_cmd_line_args(int argc, char *argv[]) {
 
 void print_usage() {
     fprintf(stderr, "Usage: master [-n number of consumers]\n");
-    exit(EXIT_SUCCESS);
+    exit(0);
 }
