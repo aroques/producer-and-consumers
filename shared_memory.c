@@ -43,7 +43,7 @@ struct SharedMemory* attach_shared_memory(struct SharedMemoryIDs* shmem_ids) {
 }
 
 void deallocate_shmem(struct SharedMemoryIDs* shmem_ids) {
-    /* Deallocate the shared memory segment. */
+    /* Deallocate shared memory segments */
     if (shmctl(shmem_ids->buffer_id, IPC_RMID, 0) == 1) {
         perror("shmctl");
         exit(1);
@@ -62,16 +62,22 @@ void deallocate_shmem(struct SharedMemoryIDs* shmem_ids) {
     }
 }
 
-void cleanup_shmem(char* shared_memory, int* segment_id) {
+void detach_shmem(struct SharedMemory* shmem) {
     /* Detach the shared memory segment. */
-    if (shmdt(shared_memory) == -1 ) {
+    if (shmdt(shmem->buffer) == -1 ) {
         perror("shmdt");
         exit(1);
     }
-
-    if (shmctl(*segment_id, IPC_RMID, 0) == 1) {
-        perror("shmctl");
+    if (shmdt(shmem->flag) == -1 ) {
+        perror("shmdt");
+        exit(1);
+    }
+    if (shmdt(shmem->turn) == -1 ) {
+        perror("shmdt");
+        exit(1);
+    }
+    if (shmdt(shmem->buffer_flag) == -1 ) {
+        perror("shmdt");
         exit(1);
     }
 }
-

@@ -18,7 +18,7 @@ struct SharedMemory {
 struct SharedMemory* attach_shared_memory(struct SharedMemoryIDs* shmem_ids);
 struct SharedMemoryIDs* get_shared_memory();
 void deallocate_shmem(struct SharedMemoryIDs* shmem_ids);
-void cleanup_shmem(char* shared_memory, int* segment_id);
+void detach_shmem(struct SharedMemory* shmem);
 
 
 #endif
