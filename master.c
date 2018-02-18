@@ -6,19 +6,16 @@
 #include <sys/wait.h>
 #include <ctype.h>
 #include <getopt.h>
-#include <sys/shm.h>
 
-#include "functions.h"
-
-const int PROC_LIMIT = 20;
-const int BUFFER_SIZE = 50;
+#include "global_constants.h"
+#include "shared_memory.h"
 
 void print_usage();
 int* parse_cmd_line_args(int argc, char *argv[]);
 char* get_program(int one_producer);
 void wait_for_all_children(int childpid);
 char* get_child_idx(int proc_count);
-void cleanup_shmem(char* shared_memory, int* segment_id);
+char* get_ids(struct SharedMemoryIDs* shmem_ids);
 
 int main (int argc, char *argv[]) {
     int n = 10;                         // Default number of consumers
@@ -30,20 +27,20 @@ int main (int argc, char *argv[]) {
     char* execv_arr[4];
     execv_arr[3] = NULL;
 
-    struct shmid_ds shmbuffer;
+//    /struct shmid_ds shmbuffer;
 
-    int segment_id = get_shared_memory();
+    struct SharedMemoryIDs* shmem_ids = get_shared_memory();
 
-    char* shared_memory = attach_shared_memory(segment_id);
-    /* Determine the segment’s size. */
-    shmctl(segment_id, IPC_STAT, &shmbuffer);
-    int segment_size = shmbuffer.shm_segsz;
-    printf("segment size: %d\n", segment_size);
+    //char* shared_memory = attach_shared_memory(segment_id);
+//    /* Determine the segment’s size. */
+//    shmctl(segment_id, IPC_STAT, &shmbuffer);
+//    int segment_size = shmbuffer.shm_segsz;
+//    printf("segment size: %d\n", segment_size);
+//
+//    /* Write a string to the shared memory segment. */
+//    sprintf(shared_memory, "hello world!\n");
 
-    /* Write a string to the shared memory segment. */
-    sprintf(shared_memory, "hello world!\n");
-
-    execv_arr[2] = shared_memory;
+    //execv_arr[2] = shared_memory;
 
     num_consumers = parse_cmd_line_args(argc, argv);
 
@@ -60,6 +57,8 @@ int main (int argc, char *argv[]) {
             execv_arr[0] = get_program(one_producer);
 
             execv_arr[1] = get_child_idx(proc_count);
+
+            execv_arr[2] = get_ids(shmem_ids);
 
             execvp(execv_arr[0], execv_arr);
 
@@ -84,28 +83,19 @@ int main (int argc, char *argv[]) {
 
     wait_for_all_children(childpid);
 
+    printf("bid: %d fid: %d tid: %d bfid: %d\n", shmem_ids->buffer_id,
+            shmem_ids->flag_id, shmem_ids->turn_id, shmem_ids->buffer_flag_id);
     /* Print out the string from shared memory. */
-    printf("%s\n", shared_memory);
+    //printf("%s\n", shared_memory);
 
-    cleanup_shmem(shared_memory, &segment_id);
+    //cleanup_shmem(shared_memory, &segment_id);
+    deallocate_shmem(shmem_ids);
 
     free(num_consumers);
+    free(shmem_ids);
 
     return 0;
 
-}
-
-void cleanup_shmem(char* shared_memory, int* segment_id) {
-    /* Detach the shared memory segment. */
-    if (shmdt(shared_memory) == -1 ) {
-        perror("shmdt");
-        exit(1);
-    }
-    /* Deallocate the shared memory segment. */
-    if (shmctl(*segment_id, IPC_RMID, 0) == 1) {
-        perror("shmctl");
-        exit(1);
-    }
 }
 
 char* get_program(int one_producer) {
@@ -121,6 +111,13 @@ char* get_child_idx(int proc_count) {
     char* child_idx = malloc(sizeof(char)*3);
     sprintf(child_idx, "%d", (proc_count - 1));
     return child_idx;
+}
+
+char* get_ids(struct SharedMemoryIDs* shmem_ids) {
+    char* ids = malloc(sizeof(char)*10);
+    sprintf(ids, "%d,%d,%d,%d", shmem_ids->buffer_id, shmem_ids->flag_id,
+            shmem_ids->turn_id, shmem_ids->buffer_flag_id);
+    return ids;
 }
 
 int* parse_cmd_line_args(int argc, char* argv[]) {
@@ -153,3 +150,6 @@ void wait_for_all_children(int childpid) {
         while (wait(NULL) > 0);
     }
 }
+
+
+

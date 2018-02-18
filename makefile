@@ -2,15 +2,15 @@ CC = gcc
 CFLAGS = -I. -g -Wall
 
 EXEC1 = master
-OBJS1 = master.o functions.o
+OBJS1 = master.o shared_memory.o
 
 EXEC2 = producer
-OBJS2 = producer.o functions.o
+OBJS2 = producer.o shared_memory.o
 
 EXEC3 = consumer
-OBJS3 = consumer.o functions.o
+OBJS3 = consumer.o shared_memory.o
 
-DEPS = functions.h 
+DEPS = global_constants.h shared_memory.h
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
