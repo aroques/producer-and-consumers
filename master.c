@@ -6,22 +6,28 @@
 #include <sys/wait.h>
 #include <ctype.h>
 #include <getopt.h>
+#include <sys/time.h>
 
 #include "global_constants.h"
 #include "shared_memory.h"
 
 void print_usage();
-int* parse_cmd_line_args(int argc, char *argv[]);
+int parse_cmd_line_args(int argc, char *argv[]);
 char* get_program(int one_producer);
-void wait_for_all_children(int childpid);
+void wait_for_all_children();
 char* get_child_idx(int proc_count);
 char* get_ids(struct SharedMemoryIDs* shmem_ids);
+void set_timer();
+void add_signal_handlers();
+void handler(int s);
+void kill_all_children();
+
+pid_t childpids[20] = { 0 }; // Global
 
 int main (int argc, char *argv[]) {
-    int n = 10;                         // Default number of consumers
-    int* num_consumers = &n;            // Number of consumers to fork
+    int num_consumers = 10;            // Number of consumers to fork
     int proc_count = 0;                 // Number of concurrent children
-    pid_t childpid = 0;                 // Child process ID
+    //childpids[PROC_LIMIT];                 // Child process IDs
     int one_producer = 0;               // True if exec'd one producer
 
     char* execv_arr[4];
@@ -30,6 +36,9 @@ int main (int argc, char *argv[]) {
 //    /struct shmid_ds shmbuffer;
 
     struct SharedMemoryIDs* shmem_ids = get_shared_memory();
+
+    set_timer();
+    add_signal_handlers();
 
     //char* shared_memory = attach_shared_memory(segment_id);
 //    /* Determine the segment’s size. */
@@ -44,7 +53,9 @@ int main (int argc, char *argv[]) {
 
     num_consumers = parse_cmd_line_args(argc, argv);
 
-    for (int i = 0; i < 4; i++) {
+    printf("num consumers: %d\n", num_consumers);
+
+    for (int i = 0; i < num_consumers; i++) {
 
         if (proc_count == PROC_LIMIT) {
             // Wait for one child to finish and decrement proc_count
@@ -52,7 +63,7 @@ int main (int argc, char *argv[]) {
             proc_count -= 1;
         }
 
-        if ((childpid = fork()) == 0) {
+        if ((childpids[i] = fork()) == 0) {
             // Child so...
             execv_arr[0] = get_program(one_producer);
 
@@ -66,7 +77,7 @@ int main (int argc, char *argv[]) {
             return 1;
         }
 
-        if (childpid == -1) {
+        if (childpids[i] == -1) {
             perror("Child failed to fork!\n");
             return 1;
         }
@@ -78,10 +89,11 @@ int main (int argc, char *argv[]) {
             // A child has finished executing
             proc_count -= 1;
         }
+        sleep(1);
 
     }
 
-    wait_for_all_children(childpid);
+    wait_for_all_children();
 
     printf("bid: %d fid: %d tid: %d bfid: %d\n", shmem_ids->buffer_id,
             shmem_ids->flag_id, shmem_ids->turn_id, shmem_ids->buffer_flag_id);
@@ -91,7 +103,6 @@ int main (int argc, char *argv[]) {
     //cleanup_shmem(shared_memory, &segment_id);
     deallocate_shmem(shmem_ids);
 
-    free(num_consumers);
     free(shmem_ids);
 
     return 0;
@@ -120,8 +131,8 @@ char* get_ids(struct SharedMemoryIDs* shmem_ids) {
     return ids;
 }
 
-int* parse_cmd_line_args(int argc, char* argv[]) {
-    int* n = malloc(sizeof(int));
+int parse_cmd_line_args(int argc, char* argv[]) {
+    int n = 0;
 
     int option;
     while ((option = getopt (argc, argv, "n:h")) != -1)
@@ -130,13 +141,18 @@ int* parse_cmd_line_args(int argc, char* argv[]) {
             print_usage();
             break;
         case 'n':
-            *n = atoi(optarg);
+            n = atoi(optarg);
             break;
         default:
             print_usage();
     }
 
-    return n;
+    if (n == 0) {
+        return 10;
+    }
+    else {
+        return n;
+    }
 
 }
 
@@ -145,11 +161,56 @@ void print_usage() {
     exit(0);
 }
 
-void wait_for_all_children(int childpid) {
-    if (childpid > 0) {
-        while (wait(NULL) > 0);
+void wait_for_all_children() {
+    pid_t pid;
+    while  ( (pid = wait(NULL)) > 0) {
+        printf("child exited. pid: %d\n", pid);
     }
 }
 
+// also need ctrl-c which is SIGINT
+
+void add_signal_handlers(void) {
+  struct sigaction act;
+  act.sa_handler = handler;
+  act.sa_flags = 0;
+  if ( ( sigemptyset(&act.sa_mask) == -1) || (sigaction(SIGALRM, &act, NULL)  == -1) ||
+          (sigaction(SIGINT, &act, NULL)  == -1) ) {
+      perror("Failed to set up interrupt");
+      exit(1);
+  }
+}
+
+void handler(int s) {
+    // kill children processes and abort
+  printf("\nsig num received: %d\n", s);
+  printf("killing all children\n");
+  kill_all_children();
+  wait_for_all_children();
+  printf("exiting...\n");
+  exit(1);
+}
+
+void kill_all_children() {
+    int length = sizeof(childpids)/sizeof(childpids[0]);
+    for (int i = 0; i < length; i++) {
+        if (childpids[i] > 0) {
+            printf("killing pid : %d\n", childpids[i]);
+            kill(childpids[i], SIGTERM);
+        }
+
+    }
+}
+
+void set_timer() {
+  struct itimerval value;
+  value.it_interval.tv_sec = TIMER_DURATION;
+  value.it_interval.tv_usec = 0;
+  value.it_value = value.it_interval;
+  if (setitimer(ITIMER_REAL, &value, NULL) == -1) {
+      perror("Failed to set up interval timer");
+      exit(1);
+  }
+}
 
 
