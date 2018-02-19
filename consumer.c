@@ -34,7 +34,7 @@ void add_signal_handler() {
   struct sigaction act;
   act.sa_handler = handler;
   act.sa_flags = 0;
-  if ( ( sigemptyset(&act.sa_mask) == -1) || (sigaction(SIGTERM, &act, NULL)  == -1) ) {
+  if ( ( sigemptyset(&act.sa_mask) == -1) || (sigaction(SIGINT, &act, NULL)  == -1) ) {
       perror("Failed to set up interrupt");
       exit(1);
   }
@@ -45,6 +45,23 @@ void handler(int s) {
     // kill children processes and abort
   fprintf(stderr, "\nsig num received in consumer: %d\n", s);
   fprintf(stderr, "exiting...\n");
+
+  FILE * fp;
+  int i;
+  /* open the file for writing*/
+  char filename[50];
+  sprintf(filename, "/home/alec/umsl/4760/2/src/test%d.txt", getpid());
+  fp = fopen (filename,"w");
+
+  /* write 10 lines of text into the file stream*/
+  for(i = 0; i < 10;i++){
+      fprintf(fp, "This is line %d\n",i + 1);
+  }
+
+  /* close the file*/
+  fclose (fp);
+
+
   perror("test");
   exit(1);
 }

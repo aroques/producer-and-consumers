@@ -162,9 +162,9 @@ void print_usage() {
 }
 
 void wait_for_all_children() {
-    pid_t pid;
-    while  ( (pid = wait(NULL)) > 0) {
-        printf("child exited. pid: %d\n", pid);
+    pid_t childpid;
+    while  ( (childpid = wait(NULL) ) > 0) {
+        printf("child exited. pid: %d\n", childpid);
     }
 }
 
@@ -196,7 +196,7 @@ void kill_all_children() {
     for (int i = 0; i < length; i++) {
         if (childpids[i] > 0) {
             printf("killing pid : %d\n", childpids[i]);
-            kill(childpids[i], SIGTERM);
+            kill(childpids[i], SIGINT);
         }
 
     }
