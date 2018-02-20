@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <string.h>
 
 #include "global_constants.h"
+#include "helpers.h"
 
 void add_signal_handler();
 void handler(int s);
@@ -18,6 +20,15 @@ int main (int argc, char *argv[]) {
 	printf("argv[1] = %s\n", argv[1]);
 	printf("argv[2] = %s\n", argv[2]);
 	printf("argv[3] = %s\n", argv[3]);
+
+
+	char** ids = split_string(argv[2], ",");
+
+    printf("ids[0] = %s\n", ids[0]);
+    printf("ids[1] = %s\n", ids[1]);
+    printf("ids[2] = %s\n", ids[2]);
+    printf("ids[3] = %s\n", ids[3]);
+
 //
 //	i = atoi(argv[1]);
 //
@@ -57,6 +68,7 @@ int main (int argc, char *argv[]) {
 //
 //        remainder_section();
 //        } while (1);
+
 //
     return 0;
 }
@@ -79,3 +91,6 @@ void handler(int s) {
   printf("exiting...\n");
   exit(1);
 }
+
+
+
