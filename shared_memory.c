@@ -69,11 +69,11 @@ struct SharedMemoryIDs* get_shared_memory_ids(char** ids) {
 }
 
 void cleanup_shared_memory(struct SharedMemoryIDs* shmem_ids, struct SharedMemory* shmem) {
-    deallocate_shmem(shmem_ids);
-    detach_shmem(shmem);
+    deallocate_shared_memory(shmem_ids);
+    detach_shared_memory(shmem);
 }
 
-void deallocate_shmem(struct SharedMemoryIDs* shmem_ids) {
+void deallocate_shared_memory(struct SharedMemoryIDs* shmem_ids) {
     /* Deallocate shared memory segments */
     if (shmctl(shmem_ids->buffer_id, IPC_RMID, 0) == 1) {
         perror("shmctl");
@@ -93,7 +93,7 @@ void deallocate_shmem(struct SharedMemoryIDs* shmem_ids) {
     }
 }
 
-void detach_shmem(struct SharedMemory* shmem) {
+void detach_shared_memory(struct SharedMemory* shmem) {
     /* Detach the shared memory segment. */
     if (shmdt(shmem->buffer) == -1 ) {
         perror("shmdt");

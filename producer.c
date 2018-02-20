@@ -10,13 +10,13 @@ int main (int argc, char *argv[]) {
     //int i, j, n = 0;
     add_signal_handler();
 
-	char** ids = split_string(argv[2], ",");
+	char** ids = split_string(argv[ID_STR_IDX], ",");
 
     struct SharedMemoryIDs* shmem_ids = get_shared_memory_ids(ids);
 
     struct SharedMemory* shmem = attach_shared_memory(shmem_ids);
 
-    cleanup_shared_memory(shmem_ids, shmem);
+    detach_shared_memory(shmem);
 
 //
 //	i = atoi(argv[1]);

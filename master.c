@@ -21,6 +21,7 @@ void set_timer();
 void add_signal_handlers();
 void sig_handler(int s);
 void kill_all_children();
+void cleanup_before_exit();
 
 pid_t childpids[20] = { 0 }; // Global
 struct SharedMemoryIDs* shmem_ids;
@@ -66,7 +67,7 @@ int main (int argc, char *argv[]) {
 
             execv_arr[1] = get_child_idx(proc_count);
 
-            execv_arr[2] = get_ids(shmem_ids);
+            execv_arr[ID_STR_IDX] = get_ids(shmem_ids);
 
             execvp(execv_arr[0], execv_arr);
 
@@ -90,14 +91,18 @@ int main (int argc, char *argv[]) {
 
     }
 
-    wait_for_all_children();
-
-    deallocate_shmem(shmem_ids);
-
-    free(shmem_ids);
+    cleanup_before_exit();
 
     return 0;
 
+}
+
+void cleanup_before_exit() {
+    wait_for_all_children();
+
+    deallocate_shared_memory(shmem_ids);
+
+    free(shmem_ids);
 }
 
 char* get_program(int one_producer) {
@@ -176,8 +181,7 @@ void sig_handler(int s) {
   printf("\nsig num received: %d\n", s);
   printf("killing all children\n");
   kill_all_children();
-  wait_for_all_children();
-  deallocate_shmem(shmem_ids);
+  cleanup_before_exit();
   printf("exiting...\n");
   exit(1);
 }
