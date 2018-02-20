@@ -8,20 +8,31 @@
 #include "helpers.h"
 #include "shared_memory.h"
 
+void add_signal_handler();
+void sigint_handler(int s);
+
+struct SharedMemory* shmem;
+FILE* fp;
+
 int main (int argc, char *argv[]) {
     int i, j, sleep_time = 0;
     srand(time(0));
+    
     i = atoi(argv[1]);
-    printf("i: %d\n", i);
+    const int NUM_PROC = atoi(argv[2]);
+    
+    char filename[50] = "./prod.log";
+    fp = fopen(filename, "w");
+    // write with fprintf(fp, "djsfhkjdsah %d", var)
 
-    const int NUM_PROC = PROC_LIMIT;
+    printf("i: %d n: %d\n", i, NUM_PROC);
 
     add_signal_handler();
 
 	char** ids = split_string(argv[ID_STR_IDX], ",");
 
     struct SharedMemoryIDs* shmem_ids = get_shared_memory_ids(ids);
-    struct SharedMemory* shmem = attach_shared_memory(shmem_ids);
+    shmem = attach_shared_memory(shmem_ids);
 
     printf("hello from producer\n");
 
@@ -33,13 +44,12 @@ int main (int argc, char *argv[]) {
 
 	printf("\nturn: %d\n", *turn);
 	for (int i = 0; i < NUM_PROC; i++) {
-	    printf("flag[%d]: %d\n", i, flag[i]);
+	    printf("flag[%d]: %d; ", i, flag[i]);
 	}
+    printf("\n");
 
 	do {
-	    printf("p:entering do..\n");
         do {
-            printf("p:entering 2nd do..\n");
             flag[i] = want_in; // Raise my flag
 
             j = *turn; // Set local variable
@@ -49,7 +59,6 @@ int main (int argc, char *argv[]) {
             while ( j != i ) {
                 j = (flag[j] != idle) ? *turn : (j + 1) % NUM_PROC;
             }
-
 
             // Declare intention to enter critical section
             flag[i] = in_cs;
@@ -68,11 +77,14 @@ int main (int argc, char *argv[]) {
 
         // Exit section
         j = (*turn + 1) % NUM_PROC;
-        while (flag[j] == idle)
+        while (flag[j] == idle) {
             j = (j + 1) % NUM_PROC;
+        }
 
         // Assign turn to next waiting process; change own flag to idle
         *turn = j; flag[i] = idle;
+
+        printf("p: exited critical section\n");
 
         // Remainder section
         sleep_time = (rand() % 5) + 1;
@@ -86,6 +98,25 @@ int main (int argc, char *argv[]) {
     return 0;
 }
 
+void add_signal_handler() {
+    struct sigaction act;
+    act.sa_handler = sigint_handler;
+    act.sa_flags = 0;
+    if ( ( sigemptyset(&act.sa_mask) == -1) || (sigaction(SIGINT, &act, NULL)  == -1) ) {
+        perror("Failed to set up interrupt");
+        exit(1);
+    }
+}
 
+void sigint_handler(int s) {
+    // kill children processes and abort
+    fprintf(stderr, "\nsig num received: %d\n", s);
+    fprintf(stderr, "exiting...\n");
 
+    fclose (fp);
 
+    detach_shared_memory(shmem);
+
+    perror("test");
+    exit(1);
+}

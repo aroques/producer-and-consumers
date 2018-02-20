@@ -23,6 +23,7 @@ void sig_handler(int s);
 void kill_all_children();
 void cleanup_before_exit();
 void initialize_shmem(struct SharedMemoryIDs* shmem_ids);
+char* get_num_total_processes(int num_consumers);
 
 // Globals for cleanup in signal handler
 pid_t childpids[20] = { 0 };
@@ -33,8 +34,8 @@ int main (int argc, char *argv[]) {
     int proc_count = 0;                // Number of concurrent children
     int one_producer = 0;              // True if exec'd one producer
 
-    char* execv_arr[4];
-    execv_arr[3] = NULL;
+    char* execv_arr[5];
+    execv_arr[4] = NULL;
 
     shmem_ids = get_shared_memory();
 
@@ -60,6 +61,8 @@ int main (int argc, char *argv[]) {
             execv_arr[0] = get_program(one_producer);
 
             execv_arr[1] = get_child_idx(proc_count);
+
+            execv_arr[2] = get_num_total_processes(num_consumers);
 
             execv_arr[ID_STR_IDX] = get_ids(shmem_ids);
 
@@ -112,6 +115,12 @@ char* get_child_idx(int proc_count) {
     char* child_idx = malloc(sizeof(char)*3);
     sprintf(child_idx, "%d", (proc_count - 1));
     return child_idx;
+}
+
+char* get_num_total_processes(int num_consumers) {
+    char* n = malloc(sizeof(char)*3);
+    sprintf(n, "%d", (num_consumers + 1));
+    return n;
 }
 
 char* get_ids(struct SharedMemoryIDs* shmem_ids) {
