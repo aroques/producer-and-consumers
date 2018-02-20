@@ -19,23 +19,23 @@ char* get_child_idx(int proc_count);
 char* get_ids(struct SharedMemoryIDs* shmem_ids);
 void set_timer();
 void add_signal_handlers();
-void handler(int s);
+void sig_handler(int s);
 void kill_all_children();
 
 pid_t childpids[20] = { 0 }; // Global
+struct SharedMemoryIDs* shmem_ids;
 
 int main (int argc, char *argv[]) {
     int num_consumers = 10;            // Number of consumers to fork
-    int proc_count = 0;                 // Number of concurrent children
-    //childpids[PROC_LIMIT];                 // Child process IDs
-    int one_producer = 0;               // True if exec'd one producer
+    int proc_count = 0;                // Number of concurrent children
+    int one_producer = 0;              // True if exec'd one producer
 
     char* execv_arr[4];
     execv_arr[3] = NULL;
 
 //    /struct shmid_ds shmbuffer;
 
-    struct SharedMemoryIDs* shmem_ids = get_shared_memory();
+     shmem_ids = get_shared_memory();
 
     set_timer();
     add_signal_handlers();
@@ -49,11 +49,8 @@ int main (int argc, char *argv[]) {
 //    /* Write a string to the shared memory segment. */
 //    sprintf(shared_memory, "hello world!\n");
 
-    //execv_arr[2] = shared_memory;
 
     num_consumers = parse_cmd_line_args(argc, argv);
-
-    printf("num consumers: %d\n", num_consumers);
 
     for (int i = 0; i < num_consumers; i++) {
 
@@ -95,12 +92,6 @@ int main (int argc, char *argv[]) {
 
     wait_for_all_children();
 
-    printf("bid: %d fid: %d tid: %d bfid: %d\n", shmem_ids->buffer_id,
-            shmem_ids->flag_id, shmem_ids->turn_id, shmem_ids->buffer_flag_id);
-    /* Print out the string from shared memory. */
-    //printf("%s\n", shared_memory);
-
-    //cleanup_shmem(shared_memory, &segment_id);
     deallocate_shmem(shmem_ids);
 
     free(shmem_ids);
@@ -172,7 +163,7 @@ void wait_for_all_children() {
 
 void add_signal_handlers(void) {
   struct sigaction act;
-  act.sa_handler = handler;
+  act.sa_handler = sig_handler;
   act.sa_flags = 0;
   if ( ( sigemptyset(&act.sa_mask) == -1) || (sigaction(SIGALRM, &act, NULL)  == -1) ||
           (sigaction(SIGINT, &act, NULL)  == -1) ) {
@@ -181,12 +172,12 @@ void add_signal_handlers(void) {
   }
 }
 
-void handler(int s) {
-    // kill children processes and abort
+void sig_handler(int s) {
   printf("\nsig num received: %d\n", s);
   printf("killing all children\n");
   kill_all_children();
   wait_for_all_children();
+  deallocate_shmem(shmem_ids);
   printf("exiting...\n");
   exit(1);
 }
