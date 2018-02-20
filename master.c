@@ -23,7 +23,8 @@ void sig_handler(int s);
 void kill_all_children();
 void cleanup_before_exit();
 
-pid_t childpids[20] = { 0 }; // Global
+// Globals for cleanup in signal handler
+pid_t childpids[20] = { 0 };
 struct SharedMemoryIDs* shmem_ids;
 
 int main (int argc, char *argv[]) {
@@ -34,26 +35,16 @@ int main (int argc, char *argv[]) {
     char* execv_arr[4];
     execv_arr[3] = NULL;
 
-//    /struct shmid_ds shmbuffer;
-
-     shmem_ids = get_shared_memory();
+    shmem_ids = get_shared_memory();
 
     set_timer();
     add_signal_handlers();
 
-    //char* shared_memory = attach_shared_memory(segment_id);
-//    /* Determine the segment’s size. */
-//    shmctl(segment_id, IPC_STAT, &shmbuffer);
-//    int segment_size = shmbuffer.shm_segsz;
-//    printf("segment size: %d\n", segment_size);
-//
-//    /* Write a string to the shared memory segment. */
-//    sprintf(shared_memory, "hello world!\n");
-
-
     num_consumers = parse_cmd_line_args(argc, argv);
 
-    for (int i = 0; i < num_consumers; i++) {
+    printf("num consumers: %d\n", num_consumers);
+
+    for (int i = 0; i < num_consumers + 1; i++) { // (num_consumers + 1) because 1 producer
 
         if (proc_count == PROC_LIMIT) {
             // Wait for one child to finish and decrement proc_count
@@ -87,7 +78,6 @@ int main (int argc, char *argv[]) {
             // A child has finished executing
             proc_count -= 1;
         }
-        sleep(1);
 
     }
 
@@ -163,8 +153,6 @@ void wait_for_all_children() {
         printf("child exited. pid: %d\n", childpid);
     }
 }
-
-// also need ctrl-c which is SIGINT
 
 void add_signal_handlers(void) {
   struct sigaction act;

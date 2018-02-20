@@ -17,9 +17,10 @@ int main (int argc, char *argv[]) {
 
     detach_shared_memory(shmem);
 
+    printf("hello from consumer\n");
+
     //printf("my number is = %s!\n", argv[1]);
 
-    while(1);
     return 0;
 }
 

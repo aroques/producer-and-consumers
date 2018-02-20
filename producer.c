@@ -18,6 +18,8 @@ int main (int argc, char *argv[]) {
 
     detach_shared_memory(shmem);
 
+    printf("hello from producer\n");
+
 //
 //	i = atoi(argv[1]);
 //
