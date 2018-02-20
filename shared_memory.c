@@ -13,7 +13,7 @@ struct SharedMemoryIDs* get_shared_memory() {
 
     ids->buffer_id = shmget(IPC_PRIVATE, getpagesize(), IPC_CREAT | S_IRUSR | S_IWUSR); // children inherit shmem segments
     ids->flag_id = shmget(IPC_PRIVATE, sizeof(int)*PROC_LIMIT, IPC_CREAT | S_IRUSR | S_IWUSR);
-    ids->turn_id = shmget(IPC_PRIVATE, sizeof(int)*2, IPC_CREAT | S_IRUSR | S_IWUSR);
+    ids->turn_id = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | S_IRUSR | S_IWUSR);
     ids->buffer_flag_id = shmget(IPC_PRIVATE, sizeof(int)*5, IPC_CREAT | S_IRUSR | S_IWUSR);
 
     if ( (ids->buffer_id == -1) | (ids->flag_id == -1) |
@@ -110,5 +110,15 @@ void detach_shared_memory(struct SharedMemory* shmem) {
     if (shmdt(shmem->buffer_flag) == -1 ) {
         perror("shmdt");
         exit(1);
+    }
+}
+
+void initialize_shared_memory(struct SharedMemory* shmem) {
+    *shmem->turn = 0;
+    for (int i = 0; i < PROC_LIMIT; i++) {
+        shmem->flag[i] = 0;
+    }
+    for (int i = 0; i < NUM_BUFFERS; i++) {
+        shmem->buffer_flag[i] = 0;
     }
 }
