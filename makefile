@@ -1,5 +1,6 @@
 CC = gcc
-CFLAGS = -I. -g -Wall
+CFLAGS = -I$(IDIR) -g -Wall
+IDIR =./include
 
 EXEC1 = master
 OBJS1 = master.o shared_memory.o helpers.o
