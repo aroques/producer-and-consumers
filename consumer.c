@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "global_constants.h"
+//#include "global_constants.h"
 #include "shared_memory.h"
 #include "helpers.h"
 
@@ -16,7 +16,7 @@ int main (int argc, char *argv[]) {
 //    struct SharedMemoryIDs* shmem_ids = get_shared_memory_ids(ids);
 //    struct SharedMemory* shmem = attach_shared_memory(shmem_ids);
 //
-//    printf("hello from consumer\n");
+    printf("hello from consumer\n");
 //
 //    int turn = *shmem->turn;
 //    int* flag[NUM_PROC] = shmem->flag;/* Flag corresponding to each process in shared memory */
@@ -57,7 +57,7 @@ int main (int argc, char *argv[]) {
 //
 //    detach_shared_memory(shmem);
 //
-//    return 0;
+    return 0;
 }
 
 

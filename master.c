@@ -81,6 +81,7 @@ int main (int argc, char *argv[]) {
             // A child has finished executing
             proc_count -= 1;
         }
+        sleep(1);
 
     }
 
