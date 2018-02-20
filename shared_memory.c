@@ -22,6 +22,7 @@ struct SharedMemoryIDs* get_shared_memory() {
         exit(1);
     }
 
+
     return ids;
 }
 

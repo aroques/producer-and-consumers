@@ -22,6 +22,7 @@ void add_signal_handlers();
 void sig_handler(int s);
 void kill_all_children();
 void cleanup_before_exit();
+void initialize_shmem(struct SharedMemoryIDs* shmem_ids);
 
 // Globals for cleanup in signal handler
 pid_t childpids[20] = { 0 };
@@ -43,6 +44,8 @@ int main (int argc, char *argv[]) {
     num_consumers = parse_cmd_line_args(argc, argv);
 
     printf("num consumers: %d\n", num_consumers);
+
+    initialize_shmem(shmem_ids);
 
     for (int i = 0; i < num_consumers + 1; i++) { // (num_consumers + 1) because 1 producer
 
@@ -196,4 +199,10 @@ void set_timer() {
   }
 }
 
+void initialize_shmem(struct SharedMemoryIDs* shmem_ids) {
+    struct SharedMemory* shmem = attach_shared_memory(shmem_ids);
+    initialize_shared_memory(shmem);
+    detach_shared_memory(shmem);
+    free(shmem);
+}
 

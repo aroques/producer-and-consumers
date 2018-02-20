@@ -22,6 +22,7 @@ void deallocate_shared_memory(struct SharedMemoryIDs* shmem_ids);
 void detach_shared_memory(struct SharedMemory* shmem);
 struct SharedMemoryIDs* get_shared_memory_ids(char** ids);
 void cleanup_shared_memory(struct SharedMemoryIDs* shmem_ids, struct SharedMemory* shmem);
+void initialize_shared_memory(struct SharedMemory* shmem);
 
 
 #endif
