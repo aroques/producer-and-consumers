@@ -20,9 +20,12 @@ int main (int argc, char *argv[]) {
     
     i = atoi(argv[1]);
     const int NUM_PROC = atoi(argv[2]);
+
+    printf("%s\n", get_timestamp());
     
     char filename[50] = "./prod.log";
     fp = fopen(filename, "w");
+    fprintf(fp, "%d %d", getpid(), i);
     // write with fprintf(fp, "djsfhkjdsah %d", var)
 
     printf("i: %d n: %d\n", i, NUM_PROC);
