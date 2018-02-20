@@ -25,8 +25,8 @@ int main (int argc, char *argv[]) {
     
     char filename[50] = "./prod.log";
     fp = fopen(filename, "w");
-    fprintf(fp, "%d %d", getpid(), i);
-    // write with fprintf(fp, "djsfhkjdsah %d", var)
+    fprintf(fp, "pid \tlogical process number\n");
+    fprintf(fp, "%d\t%d\n\n", getpid(), i);
 
     printf("i: %d n: %d\n", i, NUM_PROC);
 
@@ -45,11 +45,6 @@ int main (int argc, char *argv[]) {
 	int* turn = shmem->turn;
 	int* flag = shmem->flag; /* Flag corresponding to each process in shared memory */
 
-	printf("\nturn: %d\n", *turn);
-	for (int i = 0; i < NUM_PROC; i++) {
-	    printf("flag[%d]: %d; ", i, flag[i]);
-	}
-    printf("\n");
 
 	do {
         do {
