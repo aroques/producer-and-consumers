@@ -10,6 +10,7 @@
 
 #include "global_constants.h"
 #include "shared_memory.h"
+#include "helpers.h"
 
 void print_usage();
 int parse_cmd_line_args(int argc, char *argv[]);
@@ -24,6 +25,7 @@ void kill_all_children();
 void cleanup_before_exit();
 void initialize_shmem(struct SharedMemoryIDs* shmem_ids);
 char* get_num_total_processes(int num_consumers);
+void eof_reached(int s);
 
 // Globals for cleanup in signal handler
 pid_t childpids[20] = { 0 };
@@ -43,8 +45,6 @@ int main (int argc, char *argv[]) {
     add_signal_handlers();
 
     num_consumers = parse_cmd_line_args(argc, argv);
-
-    printf("num consumers: %d\n", num_consumers);
 
     initialize_shmem(shmem_ids);
 
@@ -84,7 +84,6 @@ int main (int argc, char *argv[]) {
             // A child has finished executing
             proc_count -= 1;
         }
-        sleep(1);
 
     }
 
@@ -113,7 +112,7 @@ char* get_program(int one_producer) {
 
 char* get_child_idx(int proc_count) {
     char* child_idx = malloc(sizeof(char)*3);
-    sprintf(child_idx, "%d", (proc_count - 1));
+    sprintf(child_idx, "%d", (proc_count));
     return child_idx;
 }
 
@@ -162,8 +161,9 @@ void print_usage() {
 
 void wait_for_all_children() {
     pid_t childpid;
-    while  ( (childpid = wait(NULL) ) > 0) {
-        printf("child exited. pid: %d\n", childpid);
+    int status;
+    while  ( (childpid = wait(&status) ) > 0) {
+        printf("child exited. pid: %d status %d\n", childpid, status);
     }
 }
 
@@ -176,23 +176,34 @@ void add_signal_handlers(void) {
       perror("Failed to set up interrupt");
       exit(1);
   }
+
+  act.sa_handler = eof_reached;
+  act.sa_flags = 0;
+  if ( ( sigemptyset(&act.sa_mask) == -1) || (sigaction(SIGUSR1, &act, NULL)  == -1) ) {
+      perror("Failed to set up interrupt");
+      exit(1);
+  }
+
 }
 
-void sig_handler(int s) {
-  printf("\nsig num received: %d\n", s);
-  printf("killing all children\n");
-  kill_all_children();
+void eof_reached(int s) {
+  kill_all_children(SIGUSR1);
+  printf("Sending SIGUSR1 from producer to parent\n");
   cleanup_before_exit();
-  printf("exiting...\n");
   exit(1);
 }
 
-void kill_all_children() {
+void sig_handler(int s) {
+  kill_all_children(SIGINT);
+  cleanup_before_exit();
+  exit(1);
+}
+
+void kill_all_children(const int signal) {
     int length = sizeof(childpids)/sizeof(childpids[0]);
     for (int i = 0; i < length; i++) {
         if (childpids[i] > 0) {
-            printf("killing pid : %d\n", childpids[i]);
-            kill(childpids[i], SIGINT);
+            kill(childpids[i], signal);
         }
 
     }
