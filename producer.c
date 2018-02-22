@@ -23,20 +23,20 @@ int main (int argc, char *argv[]) {
     i = atoi(argv[1]);
     const int NUM_PROC = atoi(argv[2]);
     
-    char filename[50] = "./prod.log";
-    log_fp = fopen(filename, "w");
-    if (log_fp == NULL) {
-        perror("failed to open data.txt for reading\n");
-        exit(1);
-    }
+//    char filename[50] = "./prod.log";
+//    log_fp = fopen(filename, "w");
+//    if (log_fp == NULL) {
+//        perror("failed to open data.txt for reading\n");
+//        exit(1);
+//    }
 
-    fprintf(log_fp, "%s Started\n", get_timestamp());
+//    fprintf(log_fp, "%s Started\n", get_timestamp());
 
-    read_fp = fopen("./data.txt", "r");
-    if (read_fp == NULL) {
-        perror("failed to open data.txt for reading\n");
-        exit(1);
-    }
+//    read_fp = fopen("./data.txt", "r");
+//    if (read_fp == NULL) {
+//        perror("failed to open data.txt for reading\n");
+//        exit(1);
+//    }
 
     add_signal_handler();
 
@@ -63,7 +63,7 @@ int main (int argc, char *argv[]) {
             flag[i] = in_cs;
 
             // Check that no one else is in critical section
-            fprintf(log_fp, "%s Check\n", get_timestamp());
+            //fprintf(log_fp, "%s Check\n", get_timestamp());
             for (j = 0; j < NUM_PROC; j++)
                 if ((j != i) && (flag[j] == in_cs))
                     break;
@@ -83,7 +83,7 @@ int main (int argc, char *argv[]) {
                 }
                 else {
                     buffer_flag[i] = 1;
-                    fprintf(log_fp, "%s Write \t %d \t Message\n", get_timestamp(), i);
+                    //fprintf(log_fp, "%s Write \t %d \t Message\n", get_timestamp(), i);
                 }
             }
         }
@@ -99,7 +99,7 @@ int main (int argc, char *argv[]) {
 
         // Remainder section
         sleep_time = (rand() % 5) + 1;
-        fprintf(log_fp, "%s Sleep \t %d\n", get_timestamp(), sleep_time);
+        //fprintf(log_fp, "%s Sleep \t %d\n", get_timestamp(), sleep_time);
         sleep(sleep_time);
 
         } while (1);
@@ -128,21 +128,21 @@ void add_signal_handler() {
 
 void eof_handler(int s) {
     //fprintf(stderr, "Process # %d exiting because of signal # %d\n", getpid(), s);
-    fprintf(log_fp, "%s Terminated\tNormal\n", get_timestamp());
+    //fprintf(log_fp, "%s Terminated\tNormal\n", get_timestamp());
 
-    if (log_fp != NULL) {
-        if (fclose(log_fp) != 0) {
-            perror("failed to close log file\n");
-            exit(1);
-        }
-
-    }
-    if (read_fp != NULL) {
-        if (fclose(read_fp) != 0) {
-            perror("failed to close log file\n");
-            exit(1);
-        }
-    }
+//    if (log_fp != NULL) {
+//        if (fclose(log_fp) != 0) {
+//            perror("failed to close log file\n");
+//            exit(1);
+//        }
+//
+//    }
+//    if (read_fp != NULL) {
+//        if (fclose(read_fp) != 0) {
+//            perror("failed to close log file\n");
+//            exit(1);
+//        }
+//    }
 
     detach_shared_memory(shmem);
 
@@ -150,21 +150,22 @@ void eof_handler(int s) {
 }
 
 void sigint_handler(int s) {
-    fprintf(stderr, "Process # %d exiting because of signal # %d\n", getpid(), s);
-    fprintf(log_fp, "%s Terminated\tKilled\n", get_timestamp());
-
-    if (log_fp != NULL) {
-        if (fclose(log_fp) != 0) {
-            perror("failed to close log file\n");
-            exit(1);
-        }
-
-    }
-    if (read_fp != NULL) {
-        if (fclose(read_fp) != 0) {
-            perror("failed to close log file\n");
-            exit(1);
-        }    }
+//    fprintf(stderr, "Process # %d exiting because of signal # %d\n", getpid(), s);
+//    fprintf(log_fp, "%s Terminated\tKilled\n", get_timestamp());
+//
+//    if (log_fp != NULL) {
+//        if (fclose(log_fp) != 0) {
+//            perror("failed to close log file\n");
+//            exit(1);
+//        }
+//
+//    }
+//    if (read_fp != NULL) {
+//        if (fclose(read_fp) != 0) {
+//            perror("failed to close log file\n");
+//            exit(1);
+//        }
+//    }
 
     detach_shared_memory(shmem);
 

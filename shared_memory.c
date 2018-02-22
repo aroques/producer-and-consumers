@@ -14,7 +14,7 @@ struct SharedMemoryIDs* get_shared_memory() {
     ids->buffer_id = shmget(IPC_PRIVATE, getpagesize(), IPC_CREAT | S_IRUSR | S_IWUSR); // children inherit shmem segments
     ids->flag_id = shmget(IPC_PRIVATE, sizeof(int)*PROC_LIMIT, IPC_CREAT | S_IRUSR | S_IWUSR);
     ids->turn_id = shmget(IPC_PRIVATE, sizeof(int), IPC_CREAT | S_IRUSR | S_IWUSR);
-    ids->buffer_flag_id = shmget(IPC_PRIVATE, sizeof(int)*5, IPC_CREAT | S_IRUSR | S_IWUSR);
+    ids->buffer_flag_id = shmget(IPC_PRIVATE, sizeof(int)*NUM_BUFFERS, IPC_CREAT | S_IRUSR | S_IWUSR);
 
     if ( (ids->buffer_id == -1) | (ids->flag_id == -1) |
             (ids->turn_id == -1) | (ids->buffer_flag_id == -1) ) {

@@ -16,20 +16,27 @@ struct SharedMemory* shmem;
 FILE* log_fp;
 
 int main (int argc, char *argv[]) {
-    int i, j, sleep_time /*buffer_idx*/ = 0;
+    int j, sleep_time /*buffer_idx*/ = 0;
     srand(time(0));
+    for (int i = 0; i < 5; i++) {
+        printf("argv[%d] = %s\n", i, argv[i]);
+    }
 
-    i = atoi(argv[1]);
+    printf("\n");
+    int i = atoi(argv[1]);
+    printf("i = %d\n", i);
     const int NUM_PROC = atoi(argv[2]);
 
-    char filename[50];
-    sprintf(filename, "./consumer%d.log", i);
-    log_fp = fopen(filename, "w");
-    if (log_fp == NULL) {
-        perror("failed to open data.txt for reading\n");
-        exit(1);
-    }
-    fprintf(log_fp, "%s Started\n", get_timestamp());
+//    char filename[50];
+//    sprintf(filename, "./consumer%d.log", i);
+//    log_fp = fopen(filename, "w");
+//    if (log_fp == NULL) {
+//        perror("failed to open data.txt for reading\n");
+//        exit(1);
+//    }
+//    fprintf(log_fp, "%s Started\n", get_timestamp());
+
+    printf("%s Started\n", get_timestamp());
 
     add_signal_handler();
 
@@ -43,13 +50,19 @@ int main (int argc, char *argv[]) {
     int* turn = shmem->turn;
     int* flag = shmem->flag; /* Flag corresponding to each process in shared memory */
 
+    printf("flag[%d] %i\n", flag[i], i);
+
     do {
 
 
         do {
             flag[i] = want_in; // Raise my flag
 
+            printf("turn = %d\n", *turn);
+
             j = *turn; // Set local variable
+
+            printf("turn = %d\n", *turn);
 
             // wait until its my turn
             while ( j != i ) {
@@ -60,7 +73,8 @@ int main (int argc, char *argv[]) {
             flag[i] = in_cs;
 
             // Check that no one else is in critical section
-            fprintf(log_fp, "%s Check\n", get_timestamp());
+            //fprintf(log_fp, "%s Check\n", get_timestamp());
+            printf("%s Checked\n", get_timestamp());
             for (j = 0; j < NUM_PROC; j++)
                 if ((j != i) && (flag[j] == in_cs))
                     break;
@@ -73,7 +87,7 @@ int main (int argc, char *argv[]) {
             if (buffer_flag[i] == 1) {
                 // Buffer is full so read it
                 //buffer_idx = BUFFER_SIZE * i;
-                fprintf(log_fp, "%s Read \t %d \t Message\n", get_timestamp(), i);
+                //fprintf(log_fp, "%s Read \t %d \t Message\n", get_timestamp(), i);
                 buffer_flag[i] = 0;
                 break;
             }
@@ -91,6 +105,7 @@ int main (int argc, char *argv[]) {
         // Remainder section
         sleep_time = (rand() % 5) + 1;
         fprintf(log_fp, "%s Sleep \t %d\n", get_timestamp(), sleep_time);
+        printf("%s Sleep \t %d\n", get_timestamp(), sleep_time);
         sleep(sleep_time);
 
         } while (1);
@@ -114,16 +129,16 @@ void add_signal_handler() {
 }
 
 void eof_handler(int s) {
-    fprintf(stderr, "Process # %d exiting because of signal # %d\n", getpid(), s);
-    fprintf(log_fp, "%s Terminated\tNormal\n", get_timestamp());
-    printf("%s Terminated\tNormal\n", get_timestamp());
-    if (log_fp != NULL) {
-        if (fclose(log_fp) != 0) {
-            perror("failed to close log file\n");
-            exit(1);
-        }
-
-    }
+//    fprintf(stderr, "Process # %d exiting because of signal # %d\n", getpid(), s);
+//    fprintf(log_fp, "%s Terminated\tNormal\n", get_timestamp());
+//    printf("%s Terminated\tNormal\n", get_timestamp());
+//    if (log_fp != NULL) {
+//        if (fclose(log_fp) != 0) {
+//            perror("failed to close log file\n");
+//            exit(1);
+//        }
+//
+//    }
 
     detach_shared_memory(shmem);
 
@@ -131,14 +146,14 @@ void eof_handler(int s) {
 }
 
 void sigint_handler(int s) {
-    fprintf(stderr, "Process # %d exiting because of signal # %d\n", getpid(), s);
-    fprintf(log_fp, "%s Terminated\tKilled\n", get_timestamp());
-    if (log_fp != NULL) {
-        if (fclose(log_fp) != 0) {
-            perror("failed to close log file\n");
-            exit(1);
-        }
-    }
+//    fprintf(stderr, "Process # %d exiting because of signal # %d\n", getpid(), s);
+//    fprintf(log_fp, "%s Terminated\tKilled\n", get_timestamp());
+//    if (log_fp != NULL) {
+//        if (fclose(log_fp) != 0) {
+//            perror("failed to close log file\n");
+//            exit(1);
+//        }
+//    }
 
     detach_shared_memory(shmem);
 
