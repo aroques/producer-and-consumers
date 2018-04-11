@@ -35,6 +35,7 @@ int main (int argc, char *argv[]) {
     int num_consumers = 10;            // Number of consumers to fork
     int proc_count = 0;                // Number of concurrent children
     int one_producer = 0;              // True if exec'd one producer
+    int i;
 
     char* execv_arr[5];
     execv_arr[4] = NULL;
@@ -48,7 +49,7 @@ int main (int argc, char *argv[]) {
 
     initialize_shmem(shmem_ids);
 
-    for (int i = 0; i < num_consumers + 1; i++) { // (num_consumers + 1) because 1 producer
+    for (i = 0; i < num_consumers + 1; i++) { // (num_consumers + 1) because 1 producer
 
         if (proc_count == PROC_LIMIT) {
             // Wait for one child to finish and decrement proc_count

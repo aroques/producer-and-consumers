@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -I$(IDIR) -g -Wall
+CFLAGS = -I$(IDIR) -g -Wall 
 IDIR =./include
 
 EXEC1 = master

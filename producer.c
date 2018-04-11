@@ -63,7 +63,7 @@ int main (int argc, char *argv[]) {
             flag[i] = in_cs;
 
             // Check that no one else is in critical section
-            //fprintf(log_fp, "%s Check\n", get_timestamp());
+            printf("Producer   : %s Check\n", get_timestamp());
             for (j = 0; j < NUM_PROC; j++)
                 if ((j != i) && (flag[j] == in_cs))
                     break;
@@ -83,7 +83,7 @@ int main (int argc, char *argv[]) {
                 }
                 else {
                     buffer_flag[i] = 1;
-                    //fprintf(log_fp, "%s Write \t %d \t Message\n", get_timestamp(), i);
+                    printf("Producer: %s Write \t %d \t Message\n", get_timestamp(), i);
                 }
             }
         }
@@ -99,7 +99,7 @@ int main (int argc, char *argv[]) {
 
         // Remainder section
         sleep_time = (rand() % 5) + 1;
-        //fprintf(log_fp, "%s Sleep \t %d\n", get_timestamp(), sleep_time);
+        printf("%s Sleep \t %d\n", get_timestamp(), sleep_time);
         sleep(sleep_time);
 
         } while (1);
