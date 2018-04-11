@@ -202,7 +202,8 @@ void sig_handler(int s) {
 
 void kill_all_children(const int signal) {
     int length = sizeof(childpids)/sizeof(childpids[0]);
-    for (int i = 0; i < length; i++) {
+    int i;
+    for (i = 0; i < length; i++) {
         if (childpids[i] > 0) {
             kill(childpids[i], signal);
         }

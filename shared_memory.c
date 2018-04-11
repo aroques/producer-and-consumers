@@ -116,10 +116,11 @@ void detach_shared_memory(struct SharedMemory* shmem) {
 
 void initialize_shared_memory(struct SharedMemory* shmem) {
     *shmem->turn = 0;
-    for (int i = 0; i < PROC_LIMIT; i++) {
+    int i;
+    for (i = 0; i < PROC_LIMIT; i++) {
         shmem->flag[i] = 0;
     }
-    for (int i = 0; i < NUM_BUFFERS; i++) {
+    for (i = 0; i < NUM_BUFFERS; i++) {
         shmem->buffer_flag[i] = 0;
     }
 }

@@ -16,14 +16,15 @@ struct SharedMemory* shmem;
 FILE* log_fp;
 
 int main (int argc, char *argv[]) {
-    int j, sleep_time, buffer_idx = 0;
+    int j, sleep_time;
     srand(time(0));
-    for (int i = 0; i < 5; i++) {
+    int i;
+    for (i = 0; i < 5; i++) {
         //printf("argv[%d] = %s\n", i, argv[i]);
     }
 
     //printf("\n");
-    int i = atoi(argv[1]);
+    i = atoi(argv[1]);
     //printf("i = %d\n", i);
     const int NUM_PROC = atoi(argv[2]);
 
@@ -86,7 +87,6 @@ int main (int argc, char *argv[]) {
         for (i = 0; i < NUM_BUFFERS; i++) {
             if (buffer_flag[i] == 1) {
                 // Buffer is full so read it
-                buffer_idx = BUFFER_SIZE * i;
                 printf("Consumer: %s Read \t %d \t Message\n", get_timestamp(), i);
                 buffer_flag[i] = 0;
                 break;

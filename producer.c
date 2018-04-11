@@ -72,7 +72,7 @@ int main (int argc, char *argv[]) {
         // Assign turn to self and enter critical section
         *turn = i;
 
-        for (int i = 0; i < NUM_BUFFERS; i++) {
+        for (i = 0; i < NUM_BUFFERS; i++) {
             if (buffer_flag[i] == 0) {
                 // Buffer is empty so fill it
                 buffer_idx = BUFFER_SIZE * i;
