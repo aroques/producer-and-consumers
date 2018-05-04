@@ -7,6 +7,8 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <sys/time.h>
+#include <stdbool.h>
+#include <errno.h>
 
 #include "global_constants.h"
 #include "shared_memory.h"
@@ -20,21 +22,26 @@ char* get_child_idx(int proc_count);
 char* get_ids(struct SharedMemoryIDs* shmem_ids);
 void set_timer();
 void add_signal_handlers();
-void sig_handler(int s);
-void kill_all_children();
+void handle_sigint(int s);
+void handle_sigalrm(int s);
+void handle_sigusr1(int sig);
+void terminate_children();
 void cleanup_before_exit();
 void initialize_shmem(struct SharedMemoryIDs* shmem_ids);
 char* get_num_total_processes(int num_consumers);
-void eof_reached(int s);
+void kill_process(int pid);
+void cleanup_and_exit();
 
 // Globals for cleanup in signal handler
 pid_t childpids[20] = { 0 };
 struct SharedMemoryIDs* shmem_ids;
+bool cleaning_up = 0;
+int num_consumers;
 
 int main (int argc, char *argv[]) {
-    int num_consumers = 10;            // Number of consumers to fork
+    num_consumers = 10;                // Number of consumers to fork
     int proc_count = 0;                // Number of concurrent children
-    int one_producer = 0;              // True if exec'd one producer
+    bool one_producer = 0;             // True if exec'd one producer
     int i;
 
     char* execv_arr[5];
@@ -88,18 +95,10 @@ int main (int argc, char *argv[]) {
 
     }
 
-    cleanup_before_exit();
+    wait_for_all_children();
 
     return 0;
 
-}
-
-void cleanup_before_exit() {
-    wait_for_all_children();
-
-    deallocate_shared_memory(shmem_ids);
-
-    free(shmem_ids);
 }
 
 char* get_program(int one_producer) {
@@ -161,53 +160,96 @@ void print_usage() {
 }
 
 void wait_for_all_children() {
-    pid_t childpid;
-    int status;
-    while  ( (childpid = wait(&status) ) > 0) {
-        printf("child exited. pid: %d status %d\n", childpid, status);
+    pid_t pid;
+    printf("Master: Waiting for all children to exit\n");
+    
+    while ((pid = wait(NULL))) {
+        if (pid < 0) {
+            if (errno == ECHILD) {
+                perror("wait");
+                break;
+            }
+        }
     }
 }
 
-void add_signal_handlers(void) {
-  struct sigaction act;
-  act.sa_handler = sig_handler;
-  act.sa_flags = 0;
-  if ( ( sigemptyset(&act.sa_mask) == -1) || (sigaction(SIGALRM, &act, NULL)  == -1) ||
-          (sigaction(SIGINT, &act, NULL)  == -1) ) {
-      perror("Failed to set up interrupt");
-      exit(1);
-  }
+void add_signal_handlers() {
+    struct sigaction act;
+    act.sa_handler = handle_sigint; // Signal handler
+    sigemptyset(&act.sa_mask);      // No other signals should be blocked
+    act.sa_flags = 0;               // 0 so do not modify behavior
+    if (sigaction(SIGINT, &act, NULL) == -1) {
+        perror("sigaction");
+        exit(1);
+    }
 
-  act.sa_handler = eof_reached;
-  act.sa_flags = 0;
-  if ( ( sigemptyset(&act.sa_mask) == -1) || (sigaction(SIGUSR1, &act, NULL)  == -1) ) {
-      perror("Failed to set up interrupt");
-      exit(1);
-  }
+    act.sa_handler = handle_sigalrm; // Signal handler
+    sigemptyset(&act.sa_mask);       // No other signals should be blocked
+    if (sigaction(SIGALRM, &act, NULL) == -1) {
+        perror("sigaction");
+        exit(1);
+    }
 
+    act.sa_handler = handle_sigusr1; // Signal handler
+    sigemptyset(&act.sa_mask);       // No other signals should be blocked
+    if (sigaction(SIGALRM, &act, NULL) == -1) {
+        perror("sigaction");
+        exit(1);
+    }
 }
 
-void eof_reached(int s) {
-  kill_all_children(SIGUSR1);
-  printf("Sending SIGUSR1 from producer to parent\n");
-  cleanup_before_exit();
-  exit(1);
+void handle_sigint(int sig) {
+    printf("\nMaster: Caught SIGINT signal %d\n", sig);
+    if (cleaning_up == 0) {
+        cleaning_up = 1;
+        cleanup_and_exit();
+    }
 }
 
-void sig_handler(int s) {
-  kill_all_children(SIGINT);
-  cleanup_before_exit();
-  exit(1);
+void handle_sigalrm(int sig) {
+    printf("\nMaster: Caught SIGALRM signal %d\n", sig);
+    printf("Master: %d seconds have passed\n", TIMER_DURATION);
+    if (cleaning_up == 0) {
+        cleaning_up = 1;
+        cleanup_and_exit();
+    }
 }
 
-void kill_all_children(const int signal) {
-    int length = sizeof(childpids)/sizeof(childpids[0]);
+void handle_sigusr1(int sig) {
+    printf("\nMaster: Caught SIGUSR1 signal %d\n", sig);
+    printf("Master: Producer has signaled that all the lines in the file have been read\n");
+    if (cleaning_up == 0) {
+        cleaning_up = 1;
+        cleanup_and_exit();
+    }
+}
+
+void cleanup_and_exit() {
+    terminate_children();
+    printf("Master: Removing shared memory\n");
+    wait_for_all_children();
+    deallocate_shared_memory(shmem_ids);
+    free(shmem_ids);
+    exit(0);
+}
+
+void terminate_children() {
+    printf("Master: Sending SIGTERM to all children\n");
     int i;
-    for (i = 0; i < length; i++) {
-        if (childpids[i] > 0) {
-            kill(childpids[i], signal);
+    for (i = 0; i < (num_consumers + 1); i++) {
+        if (childpids[i] == 0) {
+            continue;
         }
+        kill_process(i);
+    }
+}
 
+void kill_process(int pid) {
+    if (kill(childpids[pid], SIGTERM) < 0) {
+        if (errno != ESRCH) {
+            // Child process exists and kill failed
+            perror("kill");
+        }
     }
 }
 
