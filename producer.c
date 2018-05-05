@@ -11,6 +11,7 @@
 void add_signal_handler();
 void sigint_handler(int s);
 void eof_handler(int s);
+void open_files();
 
 struct SharedMemory* shmem;
 FILE* log_fp;
@@ -22,33 +23,25 @@ int main (int argc, char *argv[]) {
     
     i = atoi(argv[1]);
     const int NUM_PROC = atoi(argv[2]);
+    char** ids = split_string(argv[ID_STR_IDX], ",");
+
+    char buffer[100];
     
-//    char filename[50] = "./prod.log";
-//    log_fp = fopen(filename, "w");
-//    if (log_fp == NULL) {
-//        perror("failed to open data.txt for reading\n");
-//        exit(1);
-//    }
-
-//    fprintf(log_fp, "%s Started\n", get_timestamp());
-
-//    read_fp = fopen("./data.txt", "r");
-//    if (read_fp == NULL) {
-//        perror("failed to open data.txt for reading\n");
-//        exit(1);
-//    }
-
+    open_files();
+    
+    fprintf(log_fp, "%s Started\n", get_timestamp());
+    
     add_signal_handler();
-
-	char** ids = split_string(argv[ID_STR_IDX], ",");
-
+    
     struct SharedMemoryIDs* shmem_ids = get_shared_memory_ids(ids);
     shmem = attach_shared_memory(shmem_ids);
 
+    // Unpack shared memory pointers
     int* buffer_flag = shmem->buffer_flag;
     char* buffer = shmem-> buffer;
 	int* turn = shmem->turn;
 	int* flag = shmem->flag; /* Flag corresponding to each process in shared memory */
+
 	do {
         do {
             flag[i] = want_in; // Raise my flag
@@ -63,7 +56,9 @@ int main (int argc, char *argv[]) {
             flag[i] = in_cs;
 
             // Check that no one else is in critical section
-            printf("Producer   : %s Check\n", get_timestamp());
+            sprintf(buffer, "Producer   : %s Check\n", get_timestamp());
+            print_and_write(buffer, log_fp);
+            
             for (j = 0; j < NUM_PROC; j++)
                 if ((j != i) && (flag[j] == in_cs))
                     break;
@@ -72,23 +67,34 @@ int main (int argc, char *argv[]) {
         // Assign turn to self and enter critical section
         *turn = i;
 
+        /*
+         *  In critical section
+         */
         for (i = 0; i < NUM_BUFFERS; i++) {
             if (buffer_flag[i] == 0) {
+                
                 // Buffer is empty so fill it
                 buffer_idx = BUFFER_SIZE * i;
+                
                 if ( fgets(&buffer[buffer_idx], 100, read_fp) == NULL ) {
-                    printf("Sending SIGUSR1 from producer to parent\n");
+                    // End of file
+                    sprintf(buffer, "Producer: Sending SIGUSR1 from producer to parent\n");
+                    print_and_write(buffer, log_fp);
+                    
                     kill(getppid(), SIGUSR1);
+                    
                     break;
                 }
                 else {
+                    // We write a message
                     buffer_flag[i] = 1;
-                    printf("Producer: %s Write \t %d \t Message\n", get_timestamp(), i);
+                    sprintf(buffer, "Producer: %s Write \t %d \t Message\n", get_timestamp(), i);
+                    print_and_write(buffer, log_fp);
                 }
             }
         }
 
-        // Exit section
+        // Exit critical section
         j = (*turn + 1) % NUM_PROC;
         while (flag[j] == idle) {
             j = (j + 1) % NUM_PROC;
@@ -98,8 +104,9 @@ int main (int argc, char *argv[]) {
         *turn = j; flag[i] = idle;
 
         // Remainder section
-        sleep_time = (rand() % 5) + 1;
-        printf("%s Sleep \t %d\n", get_timestamp(), sleep_time);
+        sleep_time = get_sleep_time();
+        sprintf(buffer, "%s Sleep \t %d\n", get_timestamp(), sleep_time);
+        print_and_write(buffer, log_fp);
         sleep(sleep_time);
 
         } while (1);
@@ -171,3 +178,18 @@ void sigint_handler(int s) {
 
     exit(1);
 }
+
+void open_files() {
+    log_fp = fopen("./prod.log", "w");
+    if (log_fp == NULL) {
+        perror("failed to open prod.log for writing\n");
+        exit(1);
+    }
+
+    read_fp = fopen("./data.txt", "r");
+    if (read_fp == NULL) {
+        perror("failed to open data.txt for reading\n");
+        exit(1);
+    }
+}
+

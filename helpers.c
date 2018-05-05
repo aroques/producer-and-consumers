@@ -37,3 +37,12 @@ char* get_timestamp() {
     
     return timestamp;
 }
+
+int get_sleep_time() {
+    return (rand() % 5) + 1;
+}
+
+void print_and_write(char* str, FILE* fp) {
+    fputs(str, stdout);
+    fputs(str, fp);
+}
