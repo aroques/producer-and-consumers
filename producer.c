@@ -28,7 +28,7 @@ int main (int argc, char *argv[]) {
     
     open_files();
     
-    sprintf(buff, "Producer: %s Started\n", get_timestamp());
+    sprintf(buff, "Producer   : %s Started\n", get_timestamp());
     print_and_write(buff, log_fp);
 
     add_signal_handler();
@@ -56,7 +56,7 @@ int main (int argc, char *argv[]) {
             flag[i] = in_cs;
 
             // Check that no one else is in critical section
-            sprintf(buff, "Producer: %s Check\n", get_timestamp());
+            sprintf(buff, "Producer   : %s Check\n", get_timestamp());
             print_and_write(buff, log_fp);
             
             for (j = 0; j < NUM_PROC; j++)
@@ -79,7 +79,7 @@ int main (int argc, char *argv[]) {
                 
                 if ( fgets(&buffer[buffer_idx], 100, read_fp) == NULL ) {
                     // End of file
-                    sprintf(buff, "Producer: Sending SIGUSR1 from producer to parent\n");
+                    sprintf(buff, "Producer   : Sending SIGUSR1 from producer to parent\n");
                     print_and_write(buff, log_fp);
                     
                     kill(getppid(), SIGUSR1);
@@ -89,7 +89,7 @@ int main (int argc, char *argv[]) {
                 else {
                     // We write a message
                     buffer_flag[i] = 1;
-                    sprintf(buff, "Producer: %s Write \t %d \t Message\n", get_timestamp(), i);
+                    sprintf(buff, "Producer   : %s Write \t %d \t Message\n", get_timestamp(), i);
                     print_and_write(buff, log_fp);
                 }
             }
@@ -106,7 +106,7 @@ int main (int argc, char *argv[]) {
 
         // Remainder section
         sleep_time = get_sleep_time();
-        sprintf(buff, "Producer: %s Sleep \t %d\n", get_timestamp(), sleep_time);
+        sprintf(buff, "Producer   : %s Sleep \t %d\n", get_timestamp(), sleep_time);
         print_and_write(buff, log_fp);
         sleep(sleep_time);
 
@@ -126,6 +126,8 @@ void add_signal_handler() {
 
 void handle_sigterm(int sig) {
     detach_shared_memory(shmem);
+    fclose(log_fp);
+    fclose(read_fp);
     _exit(0);
 }
 

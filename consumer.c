@@ -10,7 +10,7 @@
 
 void add_signal_handler();
 void handle_sigterm(int s);
-void open_logfile();
+void open_logfile(int i);
 
 struct SharedMemory* shmem;
 FILE* log_fp;
@@ -21,6 +21,7 @@ int main (int argc, char *argv[]) {
     srand(time(0) ^ getpid());
 
     int i = atoi(argv[1]);
+    open_logfile(i);
 
     const int NUM_PROC = atoi(argv[2]);
 
@@ -36,7 +37,7 @@ int main (int argc, char *argv[]) {
 
     // Unpack shared memory pointers
     int* buffer_flag = shmem->buffer_flag;
-    char* buffer = shmem-> buffer;
+    //char* buffer = shmem-> buffer;
 	int* turn = shmem->turn;
 	int* flag = shmem->flag; /* Flag corresponding to each process in shared memory */
 
@@ -56,7 +57,7 @@ int main (int argc, char *argv[]) {
             flag[i] = in_cs;
 
             // Check that no one else is in critical section
-            sprintf(buff, "Consumer: %s Checked\n", get_timestamp());
+            sprintf(buff, "Consumer %2d: %s Checked\n", i, get_timestamp());
             print_and_write(buff, log_fp);
 
             for (j = 0; j < NUM_PROC; j++)
@@ -67,13 +68,13 @@ int main (int argc, char *argv[]) {
         // Assign turn to self and enter critical section
         *turn = i;
 
-        for (i = 0; i < NUM_BUFFERS; i++) {
-            if (buffer_flag[i] == 1) {
+        for (j = 0; j < NUM_BUFFERS; j++) {
+            if (buffer_flag[j] == 1) {
                 // Buffer is full so read it
-                sprintf(buff, "Consumer: %s Read \t %d \t Message\n", get_timestamp(), i);
+                sprintf(buff, "Consumer %2d: %s Read \t %d \t Message\n", i, get_timestamp(), j);
                 print_and_write(buff, log_fp);
                 
-                buffer_flag[i] = 0;
+                buffer_flag[j] = 0;
                 break;
             }
         }
@@ -90,7 +91,7 @@ int main (int argc, char *argv[]) {
         // Remainder section
         sleep_time = (rand() % 5) + 1;
 
-        sprintf(buff, "Consumer: %s Sleep \t %d\n", get_timestamp(), sleep_time);
+        sprintf(buff, "Consumer %2d: %s Sleep \t %d\n", i, get_timestamp(), sleep_time);
         print_and_write(buff, log_fp);
 
         sleep(sleep_time);
@@ -98,7 +99,7 @@ int main (int argc, char *argv[]) {
         } while (1);
 }
 
-void add_signal_handlers() {
+void add_signal_handler() {
     struct sigaction act;
     act.sa_handler = handle_sigterm; // Signal handler
     sigemptyset(&act.sa_mask);      // No other signals should be blocked
@@ -111,15 +112,17 @@ void add_signal_handlers() {
 
 void handle_sigterm(int sig) {
     detach_shared_memory(shmem);
+    fclose(log_fp);
     _exit(0);
 }
 
-void open_logfile() {
+void open_logfile(int i) {
     char filename[50];
     sprintf(filename, "./consumer%d.log", i);
     log_fp = fopen(filename, "w");
     if (log_fp == NULL) {
-        perror("failed to open %s for writing\n", filename);
+
+        perror("failed to open logfile for writing\n");
         exit(1);
     }
 }
