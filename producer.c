@@ -9,8 +9,7 @@
 #include "shared_memory.h"
 
 void add_signal_handler();
-void sigint_handler(int s);
-void eof_handler(int s);
+void handle_sigterm(int s);
 void open_files();
 
 struct SharedMemory* shmem;
@@ -19,18 +18,19 @@ FILE* read_fp;
 
 int main (int argc, char *argv[]) {
     int i, j, sleep_time, buffer_idx = 0;
-    srand(time(0));
+    srand(time(0) ^ getpid());
     
     i = atoi(argv[1]);
     const int NUM_PROC = atoi(argv[2]);
     char** ids = split_string(argv[ID_STR_IDX], ",");
 
-    char buffer[100];
+    char buff[100];
     
     open_files();
     
-    fprintf(log_fp, "%s Started\n", get_timestamp());
-    
+    sprintf(buff, "Producer: %s Started\n", get_timestamp());
+    print_and_write(buff, log_fp);
+
     add_signal_handler();
     
     struct SharedMemoryIDs* shmem_ids = get_shared_memory_ids(ids);
@@ -56,12 +56,13 @@ int main (int argc, char *argv[]) {
             flag[i] = in_cs;
 
             // Check that no one else is in critical section
-            sprintf(buffer, "Producer   : %s Check\n", get_timestamp());
-            print_and_write(buffer, log_fp);
+            sprintf(buff, "Producer: %s Check\n", get_timestamp());
+            print_and_write(buff, log_fp);
             
             for (j = 0; j < NUM_PROC; j++)
                 if ((j != i) && (flag[j] == in_cs))
                     break;
+
         } while ((j < NUM_PROC) || (*turn != i && flag[*turn] != idle));
 
         // Assign turn to self and enter critical section
@@ -78,8 +79,8 @@ int main (int argc, char *argv[]) {
                 
                 if ( fgets(&buffer[buffer_idx], 100, read_fp) == NULL ) {
                     // End of file
-                    sprintf(buffer, "Producer: Sending SIGUSR1 from producer to parent\n");
-                    print_and_write(buffer, log_fp);
+                    sprintf(buff, "Producer: Sending SIGUSR1 from producer to parent\n");
+                    print_and_write(buff, log_fp);
                     
                     kill(getppid(), SIGUSR1);
                     
@@ -88,8 +89,8 @@ int main (int argc, char *argv[]) {
                 else {
                     // We write a message
                     buffer_flag[i] = 1;
-                    sprintf(buffer, "Producer: %s Write \t %d \t Message\n", get_timestamp(), i);
-                    print_and_write(buffer, log_fp);
+                    sprintf(buff, "Producer: %s Write \t %d \t Message\n", get_timestamp(), i);
+                    print_and_write(buff, log_fp);
                 }
             }
         }
@@ -105,8 +106,8 @@ int main (int argc, char *argv[]) {
 
         // Remainder section
         sleep_time = get_sleep_time();
-        sprintf(buffer, "%s Sleep \t %d\n", get_timestamp(), sleep_time);
-        print_and_write(buffer, log_fp);
+        sprintf(buff, "Producer: %s Sleep \t %d\n", get_timestamp(), sleep_time);
+        print_and_write(buff, log_fp);
         sleep(sleep_time);
 
         } while (1);
@@ -114,69 +115,18 @@ int main (int argc, char *argv[]) {
 
 void add_signal_handler() {
     struct sigaction act;
-    act.sa_handler = sigint_handler;
-    act.sa_flags = 0;
-    if ( ( sigemptyset(&act.sa_mask) == -1) || (sigaction(SIGINT, &act, NULL)  == -1) ) {
-        perror("Failed to set up interrupt");
-        exit(1);
-    }
-
-    struct sigaction act2;
-    act2.sa_flags = 0;
-
-
-    act2.sa_handler = eof_handler;
-    act2.sa_flags = 0;
-    if ( ( sigemptyset(&act2.sa_mask) == -1) || (sigaction(SIGUSR1, &act2, NULL)  == -1) ) {
-        perror("Failed to set up interrupt");
+    act.sa_handler = handle_sigterm; // Signal handler
+    sigemptyset(&act.sa_mask);      // No other signals should be blocked
+    act.sa_flags = 0;               // 0 so do not modify behavior
+    if (sigaction(SIGTERM, &act, NULL) == -1) {
+        perror("sigaction");
         exit(1);
     }
 }
 
-void eof_handler(int s) {
-    //fprintf(stderr, "Process # %d exiting because of signal # %d\n", getpid(), s);
-    //fprintf(log_fp, "%s Terminated\tNormal\n", get_timestamp());
-
-//    if (log_fp != NULL) {
-//        if (fclose(log_fp) != 0) {
-//            perror("failed to close log file\n");
-//            exit(1);
-//        }
-//
-//    }
-//    if (read_fp != NULL) {
-//        if (fclose(read_fp) != 0) {
-//            perror("failed to close log file\n");
-//            exit(1);
-//        }
-//    }
-
+void handle_sigterm(int sig) {
     detach_shared_memory(shmem);
-
-    exit(1);
-}
-
-void sigint_handler(int s) {
-//    fprintf(stderr, "Process # %d exiting because of signal # %d\n", getpid(), s);
-//    fprintf(log_fp, "%s Terminated\tKilled\n", get_timestamp());
-//
-//    if (log_fp != NULL) {
-//        if (fclose(log_fp) != 0) {
-//            perror("failed to close log file\n");
-//            exit(1);
-//        }
-//
-//    }
-//    if (read_fp != NULL) {
-//        if (fclose(read_fp) != 0) {
-//            perror("failed to close log file\n");
-//            exit(1);
-//        }
-//    }
-
-    detach_shared_memory(shmem);
-
-    exit(1);
+    _exit(0);
 }
 
 void open_files() {
@@ -192,4 +142,3 @@ void open_files() {
         exit(1);
     }
 }
-

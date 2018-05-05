@@ -9,15 +9,14 @@
 #include "shared_memory.h"
 
 void add_signal_handler();
-void sigint_handler(int s);
-void eof_handler(int s);
+void handle_sigterm(int s);
 
 struct SharedMemory* shmem;
 FILE* log_fp;
 
 int main (int argc, char *argv[]) {
     int j, sleep_time;
-    srand(time(0));
+    srand(time(0) ^ getpid());
     int i;
     for (i = 0; i < 5; i++) {
         //printf("argv[%d] = %s\n", i, argv[i]);
@@ -111,51 +110,18 @@ int main (int argc, char *argv[]) {
         } while (1);
 }
 
-void add_signal_handler() {
-    struct sigaction act1;
-    act1.sa_handler = sigint_handler;
-    act1.sa_flags = 0;
-    if ( ( sigemptyset(&act1.sa_mask) == -1) || (sigaction(SIGINT, &act1, NULL)  == -1) ) {
-        perror("Failed to set up interrupt");
-        exit(1);
-    }
-    struct sigaction act2;
-    act2.sa_handler = eof_handler;
-    act2.sa_flags = 0;
-    if ( ( sigemptyset(&act2.sa_mask) == -1) || (sigaction(SIGUSR1, &act2, NULL)  == -1) ) {
-        perror("Failed to set up interrupt");
+void add_signal_handlers() {
+    struct sigaction act;
+    act.sa_handler = handle_sigterm; // Signal handler
+    sigemptyset(&act.sa_mask);      // No other signals should be blocked
+    act.sa_flags = 0;               // 0 so do not modify behavior
+    if (sigaction(SIGTERM, &act, NULL) == -1) {
+        perror("sigaction");
         exit(1);
     }
 }
 
-void eof_handler(int s) {
-//    fprintf(stderr, "Process # %d exiting because of signal # %d\n", getpid(), s);
-//    fprintf(log_fp, "%s Terminated\tNormal\n", get_timestamp());
-//    printf("%s Terminated\tNormal\n", get_timestamp());
-//    if (log_fp != NULL) {
-//        if (fclose(log_fp) != 0) {
-//            perror("failed to close log file\n");
-//            exit(1);
-//        }
-//
-//    }
-
+void handle_sigterm(int sig) {
     detach_shared_memory(shmem);
-
-    exit(1);
-}
-
-void sigint_handler(int s) {
-//    fprintf(stderr, "Process # %d exiting because of signal # %d\n", getpid(), s);
-//    fprintf(log_fp, "%s Terminated\tKilled\n", get_timestamp());
-//    if (log_fp != NULL) {
-//        if (fclose(log_fp) != 0) {
-//            perror("failed to close log file\n");
-//            exit(1);
-//        }
-//    }
-
-    detach_shared_memory(shmem);
-
-    exit(1);
+    _exit(0);
 }
