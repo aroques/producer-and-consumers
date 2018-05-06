@@ -117,7 +117,7 @@ int main (int argc, char *argv[]) {
 void add_signal_handler() {
     struct sigaction act;
     memset (&act, '\0', sizeof(act));
-    act.sa_handler = handle_sigterm; // Signal handler
+    act.sa_handler = handle_sigint; // Signal handler
     sigemptyset(&act.sa_mask);       // No other signals should be blocked
     act.sa_flags = 0;                // 0 so do not modify behavior
     if (sigaction(SIGINT, &act, NULL) == -1) {
