@@ -31,9 +31,14 @@ To run the program:
 ```
 If no -n flag is provided, then the default will be 10.
 
-To clean up run:
+To remove all object and binary files run:
 ```
 make clean
+```
+
+To remove all log files run:
+```
+rm *.log
 ```
 
 ### Below is my git log (in oneline format):
