@@ -10,7 +10,7 @@
 #include "shared_memory.h"
 
 void add_signal_handler();
-void handle_sigterm(int s);
+void handle_sigint(int s);
 void open_logfile(int i);
 
 struct SharedMemory* shmem;
@@ -48,7 +48,7 @@ int main (int argc, char *argv[]) {
             sprintf(buff, "Consumer %2d: %s Exiting program\n", i, get_timestamp());
             print_and_write(buff, log_fp);
 
-            handle_sigterm(-1);
+            handle_sigint(-1);
         }
 
         do {
@@ -56,7 +56,7 @@ int main (int argc, char *argv[]) {
                 sprintf(buff, "Consumer %2d: %s Exiting program\n", i, get_timestamp());
                 print_and_write(buff, log_fp);
 
-                handle_sigterm(-1);
+                handle_sigint(-1);
             }
 
             flag[i] = want_in; // Raise my flag
@@ -126,7 +126,7 @@ void add_signal_handler() {
     }
 }
 
-void handle_sigterm(int sig) {
+void handle_sigint(int sig) {
     printf("Consumer   : Caught SIGINT\n");
     detach_shared_memory(shmem);
     fclose(log_fp);
