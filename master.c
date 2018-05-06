@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <string.h>
 
 #include "global_constants.h"
 #include "shared_memory.h"
@@ -35,7 +36,9 @@ void cleanup_and_exit();
 // Globals for cleanup in signal handler
 pid_t childpids[20] = { 0 };
 struct SharedMemoryIDs* shmem_ids;
+struct SharedMemory* shmem;
 bool cleaning_up = 0;
+int* end_program;
 int num_consumers;
 
 int main (int argc, char *argv[]) {
@@ -48,13 +51,15 @@ int main (int argc, char *argv[]) {
     execv_arr[4] = NULL;
 
     shmem_ids = get_shared_memory();
+    initialize_shmem(shmem_ids);
+
+    shmem = attach_consumer_shared_memory(shmem_ids);
+    end_program = shmem->end_program;
 
     set_timer();
     add_signal_handlers();
 
     num_consumers = parse_cmd_line_args(argc, argv);
-
-    initialize_shmem(shmem_ids);
 
     for (i = 0; i < num_consumers + 1; i++) { // (num_consumers + 1) because 1 producer
 
@@ -94,8 +99,12 @@ int main (int argc, char *argv[]) {
         }
 
     }
+    
+    // wait_for_all_children();
+    printf("MASTER WAITING FOR end_program\n");
+    while (!*end_program);
 
-    wait_for_all_children();
+    cleanup_and_exit();
 
     return 0;
 
@@ -123,9 +132,9 @@ char* get_num_total_processes(int num_consumers) {
 }
 
 char* get_ids(struct SharedMemoryIDs* shmem_ids) {
-    char* ids = malloc(sizeof(char)*10);
-    sprintf(ids, "%d,%d,%d,%d", shmem_ids->buffer_id, shmem_ids->flag_id,
-            shmem_ids->turn_id, shmem_ids->buffer_flag_id);
+    char* ids = malloc(sizeof(char)*25);
+    sprintf(ids, "%d,%d,%d,%d,%d", shmem_ids->buffer_id, shmem_ids->flag_id,
+            shmem_ids->turn_id, shmem_ids->buffer_flag_id, shmem_ids->end_program_id);
     return ids;
 }
 
@@ -175,6 +184,7 @@ void wait_for_all_children() {
 
 void add_signal_handlers() {
     struct sigaction act;
+    memset (&act, '\0', sizeof(act));
     act.sa_handler = handle_sigint; // Signal handler
     sigemptyset(&act.sa_mask);      // No other signals should be blocked
     act.sa_flags = 0;               // 0 so do not modify behavior
@@ -192,7 +202,7 @@ void add_signal_handlers() {
 
     act.sa_handler = handle_sigusr1; // Signal handler
     sigemptyset(&act.sa_mask);       // No other signals should be blocked
-    if (sigaction(SIGALRM, &act, NULL) == -1) {
+    if (sigaction(SIGUSR1, &act, NULL) == -1) {
         perror("sigaction");
         exit(1);
     }
@@ -200,6 +210,9 @@ void add_signal_handlers() {
 
 void handle_sigint(int sig) {
     printf("\nMaster: Caught SIGINT signal %d\n", sig);
+    printf("\nMaster: BEFORE SETTING end_program %d\n", *end_program);
+    *end_program = 1;
+    printf("\nMaster: AFTER SETTING end_program %d\n", *end_program);
     if (cleaning_up == 0) {
         cleaning_up = 1;
         cleanup_and_exit();
@@ -225,11 +238,14 @@ void handle_sigusr1(int sig) {
 }
 
 void cleanup_and_exit() {
-    terminate_children();
-    printf("Master: Removing shared memory\n");
+    // sleep(10);
+    // terminate_children();
+    printf("Master: cleanup_and_exit()\n");
     wait_for_all_children();
-    deallocate_shared_memory(shmem_ids);
+    printf("Master: Removing shared memory\n");
+    cleanup_shared_memory(shmem_ids, shmem);
     free(shmem_ids);
+    free(shmem);
     exit(0);
 }
 
@@ -245,6 +261,7 @@ void terminate_children() {
 }
 
 void kill_process(int pid) {
+    printf("SENDING SIGTERM TO CHILD PID %d\n", childpids[pid]);
     if (kill(childpids[pid], SIGTERM) < 0) {
         if (errno != ESRCH) {
             // Child process exists and kill failed

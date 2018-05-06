@@ -45,4 +45,5 @@ int get_sleep_time() {
 void print_and_write(char* str, FILE* fp) {
     fputs(str, stdout);
     fputs(str, fp);
+    fflush(stdout);
 }

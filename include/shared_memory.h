@@ -6,6 +6,7 @@ struct SharedMemoryIDs {
     int flag_id;
     int turn_id;
     int buffer_flag_id;
+    int end_program_id;
 };
 
 struct SharedMemory {
@@ -13,6 +14,7 @@ struct SharedMemory {
     int* flag;
     int* turn;
     int* buffer_flag;
+    int* end_program;
 };
 
 struct SharedMemory* attach_shared_memory(struct SharedMemoryIDs* shmem_ids);
