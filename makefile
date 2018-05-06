@@ -28,4 +28,4 @@ consumer: $(OBJS3)
 	gcc -o $(EXEC3) $^ $(CFLAGS)
 
 clean:
-	rm *.o
+	rm $(EXEC1) $(EXEC2) $(EXEC3) *.o
