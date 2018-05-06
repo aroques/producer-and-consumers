@@ -12,6 +12,7 @@
 void add_signal_handler();
 void handle_sigint(int s);
 void open_files();
+void cleanup_and_exit();
 
 struct SharedMemory* shmem;
 FILE* log_fp;
@@ -30,7 +31,7 @@ int main (int argc, char *argv[]) {
     
     open_files();
     
-    sprintf(buff, "Producer   : %s Started\n", get_timestamp());
+    sprintf(buff, "Producer   : %s \t Started\n", get_timestamp());
     print_and_write(buff, log_fp);
 
     add_signal_handler();
@@ -48,18 +49,18 @@ int main (int argc, char *argv[]) {
 	do {
 
         if (*end_program) {
-            sprintf(buff, "Producer   : %s Exiting program\n", get_timestamp());
+            sprintf(buff, "Producer   : %s \t Exiting program\n", get_timestamp());
             print_and_write(buff, log_fp);
 
-            handle_sigint(-1);
+            cleanup_and_exit();
         }
         do {
 
             if (*end_program) {
-                sprintf(buff, "Producer   : %s Exiting program\n", get_timestamp());
+                sprintf(buff, "Producer   : %s \t Exiting program\n", get_timestamp());
                 print_and_write(buff, log_fp);
 
-                handle_sigint(-1);
+                cleanup_and_exit();
             }
             
             flag[i] = want_in; // Raise my flag
@@ -75,7 +76,7 @@ int main (int argc, char *argv[]) {
             flag[i] = in_cs;
 
             // Check that no one else is in critical section
-            sprintf(buff, "Producer   : %s Check\n", get_timestamp());
+            sprintf(buff, "Producer   : %s \t Check\n", get_timestamp());
             print_and_write(buff, log_fp);
             
             for (j = 0; j < NUM_PROC; j++)
@@ -98,7 +99,10 @@ int main (int argc, char *argv[]) {
                 
                 if ( fgets(&buffer[buffer_idx], 100, read_fp) == NULL ) {
                     // End of file
-                    sprintf(buff, "Producer   : Flipping end program flag\n");
+                    sprintf(buff, "Producer   : %s \t All lines of data have ben read\n", get_timestamp());
+                    print_and_write(buff, log_fp);
+
+                    sprintf(buff, "Producer   : %s \t Flipping end program flag\n", get_timestamp());
                     print_and_write(buff, log_fp);
                     
                     *end_program = 1;
@@ -108,7 +112,7 @@ int main (int argc, char *argv[]) {
                 else {
                     // We write a message
                     buffer_flag[k] = 1;
-                    sprintf(buff, "Producer   : %s Write \t %d \t Message\n", get_timestamp(), k);
+                    sprintf(buff, "Producer   : %s \t Write \t %d \t Message\n", get_timestamp(), k);
                     print_and_write(buff, log_fp);
                 }
             }
@@ -126,7 +130,7 @@ int main (int argc, char *argv[]) {
 
         // Remainder section
         sleep_time = get_sleep_time();
-        sprintf(buff, "Producer   : %s Sleep \t %d\n", get_timestamp(), sleep_time);
+        sprintf(buff, "Producer   : %s \t Sleep \t %d\n", get_timestamp(), sleep_time);
         print_and_write(buff, log_fp);
         sleep(sleep_time);
 
@@ -145,7 +149,11 @@ void add_signal_handler() {
 }
 
 void handle_sigint(int sig) {
-    printf("Producer   : Caught SIGINT\n");
+    printf("Producer   : %s \t Caught SIGINT\n", get_timestamp());
+    cleanup_and_exit();
+}
+
+void cleanup_and_exit() {
     detach_shared_memory(shmem);
     fclose(log_fp);
     fclose(read_fp);

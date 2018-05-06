@@ -100,7 +100,7 @@ int main (int argc, char *argv[]) {
 
     }
     
-    printf("Master: Waiting for producer to read all strings from buffer\n");
+    printf("Master     : %s \t Waiting for producer to read all strings from buffer\n", get_timestamp());
     while (!*end_program);
 
     cleanup_and_exit();
@@ -169,7 +169,7 @@ void print_usage() {
 
 void wait_for_all_children() {
     pid_t pid;
-    printf("Master: Waiting for all children to exit\n");
+    printf("Master     : %s \t Waiting for all children to exit\n", get_timestamp());
     while ((pid = wait(NULL))) {
         if (pid < 0) {
             if (errno == ECHILD) {
@@ -200,7 +200,7 @@ void add_signal_handlers() {
 }
 
 void handle_sigint(int sig) {
-    printf("\nMaster: Caught SIGINT signal %d\n", sig);
+    printf("\nMaster     : %s \t Caught SIGINT signal %d\n", get_timestamp(), sig);
     *end_program = 1;
     if (cleaning_up == 0) {
         cleaning_up = 1;
@@ -209,8 +209,8 @@ void handle_sigint(int sig) {
 }
 
 void handle_sigalrm(int sig) {
-    printf("\nMaster: Caught SIGALRM signal %d\n", sig);
-    printf("Master: %d seconds have passed\n", TIMER_DURATION);
+    printf("\nMaster     : %s \t Caught SIGALRM signal %d\n", get_timestamp(), sig);
+    printf("Master     : %s \t %d seconds have passed\n", get_timestamp(), TIMER_DURATION);
     *end_program = 1;
     if (cleaning_up == 0) {
         cleaning_up = 1;
@@ -220,7 +220,7 @@ void handle_sigalrm(int sig) {
 
 void cleanup_and_exit() {
     wait_for_all_children();
-    printf("Master: Removing shared memory\n");
+    printf("Master     : %s \t Removing shared memory\n", get_timestamp());
     cleanup_shared_memory(shmem_ids, shmem);
     free(shmem_ids);
     free(shmem);
@@ -228,7 +228,7 @@ void cleanup_and_exit() {
 }
 
 void terminate_children() {
-    printf("Master: Sending SIGTERM to all children\n");
+    printf("Master     : %s \t Sending SIGTERM to all children\n", get_timestamp());
     int i;
     for (i = 0; i < (num_consumers + 1); i++) {
         if (childpids[i] == 0) {

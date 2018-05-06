@@ -12,6 +12,7 @@
 void add_signal_handler();
 void handle_sigint(int s);
 void open_logfile(int i);
+void cleanup_and_exit();
 
 struct SharedMemory* shmem;
 FILE* log_fp;
@@ -26,7 +27,7 @@ int main (int argc, char *argv[]) {
 
     const int NUM_PROC = atoi(argv[2]);
 
-    sprintf(buff, "Consumer %2d: %s Started\n", i, get_timestamp());
+    sprintf(buff, "Consumer %2d: %s \t Started\n", i, get_timestamp());
     print_and_write(buff, log_fp);
 
     add_signal_handler();
@@ -45,18 +46,18 @@ int main (int argc, char *argv[]) {
 
     do {
         if (*end_program) {
-            sprintf(buff, "Consumer %2d: %s Exiting program\n", i, get_timestamp());
+            sprintf(buff, "Consumer %2d: %s \t Exiting program\n", i, get_timestamp());
             print_and_write(buff, log_fp);
 
-            handle_sigint(-1);
+            cleanup_and_exit();
         }
 
         do {
             if (*end_program) {
-                sprintf(buff, "Consumer %2d: %s Exiting program\n", i, get_timestamp());
+                sprintf(buff, "Consumer %2d: %s \t Exiting program\n", i, get_timestamp());
                 print_and_write(buff, log_fp);
 
-                handle_sigint(-1);
+                cleanup_and_exit();
             }
 
             flag[i] = want_in; // Raise my flag
@@ -72,7 +73,7 @@ int main (int argc, char *argv[]) {
             flag[i] = in_cs;
 
             // Check that no one else is in critical section
-            sprintf(buff, "Consumer %2d: %s Checked\n", i, get_timestamp());
+            sprintf(buff, "Consumer %2d: %s \t Checked\n", i, get_timestamp());
             print_and_write(buff, log_fp);
 
             for (j = 0; j < NUM_PROC; j++)
@@ -86,7 +87,7 @@ int main (int argc, char *argv[]) {
         for (k = 0; k < NUM_BUFFERS; k++) {
             if (buffer_flag[k] == 1) {
                 // Buffer is full so read it
-                sprintf(buff, "Consumer %2d: %s Read \t %d \t Message\n", i, get_timestamp(), k);
+                sprintf(buff, "Consumer %2d: %s \t Read \t %d \t Message\n", i, get_timestamp(), k);
                 print_and_write(buff, log_fp);
                 
                 buffer_flag[k] = 0;
@@ -106,7 +107,7 @@ int main (int argc, char *argv[]) {
         // Remainder section
         sleep_time = get_sleep_time();
 
-        sprintf(buff, "Consumer %2d: %s Sleep \t %d\n", i, get_timestamp(), sleep_time);
+        sprintf(buff, "Consumer %2d: %s \t Sleep \t %d\n", i, get_timestamp(), sleep_time);
         print_and_write(buff, log_fp);
 
         sleep(sleep_time);
@@ -127,7 +128,11 @@ void add_signal_handler() {
 }
 
 void handle_sigint(int sig) {
-    printf("Consumer   : Caught SIGINT\n");
+    printf("Consumer   : %s \t Caught SIGINT\n", get_timestamp());
+    cleanup_and_exit();
+}
+
+void cleanup_and_exit() {
     detach_shared_memory(shmem);
     fclose(log_fp);
     _exit(0);
