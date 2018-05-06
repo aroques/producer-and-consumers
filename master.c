@@ -100,8 +100,7 @@ int main (int argc, char *argv[]) {
 
     }
     
-    // wait_for_all_children();
-    printf("MASTER WAITING FOR end_program\n");
+    printf("Master: Waiting for producer to read all strings from buffer\n");
     while (!*end_program);
 
     cleanup_and_exit();
@@ -171,7 +170,6 @@ void print_usage() {
 void wait_for_all_children() {
     pid_t pid;
     printf("Master: Waiting for all children to exit\n");
-    
     while ((pid = wait(NULL))) {
         if (pid < 0) {
             if (errno == ECHILD) {
@@ -199,20 +197,11 @@ void add_signal_handlers() {
         perror("sigaction");
         exit(1);
     }
-
-    act.sa_handler = handle_sigusr1; // Signal handler
-    sigemptyset(&act.sa_mask);       // No other signals should be blocked
-    if (sigaction(SIGUSR1, &act, NULL) == -1) {
-        perror("sigaction");
-        exit(1);
-    }
 }
 
 void handle_sigint(int sig) {
     printf("\nMaster: Caught SIGINT signal %d\n", sig);
-    printf("\nMaster: BEFORE SETTING end_program %d\n", *end_program);
     *end_program = 1;
-    printf("\nMaster: AFTER SETTING end_program %d\n", *end_program);
     if (cleaning_up == 0) {
         cleaning_up = 1;
         cleanup_and_exit();
@@ -222,15 +211,7 @@ void handle_sigint(int sig) {
 void handle_sigalrm(int sig) {
     printf("\nMaster: Caught SIGALRM signal %d\n", sig);
     printf("Master: %d seconds have passed\n", TIMER_DURATION);
-    if (cleaning_up == 0) {
-        cleaning_up = 1;
-        cleanup_and_exit();
-    }
-}
-
-void handle_sigusr1(int sig) {
-    printf("\nMaster: Caught SIGUSR1 signal %d\n", sig);
-    printf("Master: Producer has signaled that all the lines in the file have been read\n");
+    *end_program = 1;
     if (cleaning_up == 0) {
         cleaning_up = 1;
         cleanup_and_exit();
@@ -238,9 +219,6 @@ void handle_sigusr1(int sig) {
 }
 
 void cleanup_and_exit() {
-    // sleep(10);
-    // terminate_children();
-    printf("Master: cleanup_and_exit()\n");
     wait_for_all_children();
     printf("Master: Removing shared memory\n");
     cleanup_shared_memory(shmem_ids, shmem);
@@ -261,7 +239,6 @@ void terminate_children() {
 }
 
 void kill_process(int pid) {
-    printf("SENDING SIGTERM TO CHILD PID %d\n", childpids[pid]);
     if (kill(childpids[pid], SIGTERM) < 0) {
         if (errno != ESRCH) {
             // Child process exists and kill failed

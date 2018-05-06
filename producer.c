@@ -22,11 +22,8 @@ int main (int argc, char *argv[]) {
     srand(time(0) ^ getpid());
 
     pid_t pid = getpid();
-    printf("PRODUCER SPAWNED PID %d\n", pid);
     
     i = atoi(argv[1]);
-
-    printf("PRODUCER: i = %d\n", i);
 
     const int NUM_PROC = atoi(argv[2]);
     char** ids = split_string(argv[ID_STR_IDX], ",");
@@ -51,7 +48,6 @@ int main (int argc, char *argv[]) {
     int* end_program = shmem->end_program;
 
 	do {
-        printf("PRODUCER END PROGRAM %d\n", *end_program);
 
         if (*end_program) {
             printf("PRODUCER EXITING PROGRAM\n");
