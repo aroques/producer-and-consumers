@@ -1,6 +1,6 @@
-## Concurrent UNIX Processes and shared memory
+# Concurrent UNIX Processes and shared memory
 
-### Producer and Consumers
+## Producer and Consumers
 
 **Problem:** In many applications, we have a number of processes trying to write into a single file. If any two processes open a file to append something to the file (think of logs as an example), the exact timing at which the file is closed becomes extremely important. This is the critical section problem.
 
@@ -18,6 +18,8 @@ The consumer when in its critical section will read data from the first full buf
 ### Interprocess Communication
 When the program should terminate becuase all data from `data.txt` has been read, a SIGINT, or SIGALRM signal then an `end_program` flag in shared memory will be flipped. All processes continuously check this flag, and if it is true will terminate. 
 
+## Usage
+
 To build this program run:
 ```
 make
@@ -34,7 +36,7 @@ To clean up run:
 make clean
 ```
 
-#### Below is my git log (in oneline format):
+### Below is my git log (in oneline format):
 46c2bf0 2018-05-06 16:04:05 -0500 Add flipping end program flag print statements to master  
 ef2a8c0 2018-05-06 15:58:13 -0500 Add executables to make clean target  
 139ea46 2018-05-06 15:57:02 -0500 Improve make clean target  
