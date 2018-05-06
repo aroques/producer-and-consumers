@@ -201,6 +201,7 @@ void add_signal_handlers() {
 
 void handle_sigint(int sig) {
     printf("\nMaster     : %s \t Caught SIGINT signal %d\n", get_timestamp(), sig);
+    printf("Master     : %s \t Flipping end program flag\n", get_timestamp());
     *end_program = 1;
     if (cleaning_up == 0) {
         cleaning_up = 1;
@@ -211,6 +212,7 @@ void handle_sigint(int sig) {
 void handle_sigalrm(int sig) {
     printf("\nMaster     : %s \t Caught SIGALRM signal %d\n", get_timestamp(), sig);
     printf("Master     : %s \t %d seconds have passed\n", get_timestamp(), TIMER_DURATION);
+    printf("Master     : %s \t Flipping end program flag\n", get_timestamp());
     *end_program = 1;
     if (cleaning_up == 0) {
         cleaning_up = 1;
