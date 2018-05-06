@@ -20,8 +20,6 @@ FILE* read_fp;
 int main (int argc, char *argv[]) {
     int i, j, k, sleep_time, buffer_idx = 0;
     srand(time(0) ^ getpid());
-
-    pid_t pid = getpid();
     
     i = atoi(argv[1]);
 
@@ -50,7 +48,6 @@ int main (int argc, char *argv[]) {
 	do {
 
         if (*end_program) {
-            printf("PRODUCER EXITING PROGRAM\n");
             sprintf(buff, "Producer   : %s Exiting program\n", get_timestamp());
             print_and_write(buff, log_fp);
 
@@ -59,25 +56,21 @@ int main (int argc, char *argv[]) {
         do {
 
             if (*end_program) {
-                printf("PRODUCER EXITING PROGRAM\n");
                 sprintf(buff, "Producer   : %s Exiting program\n", get_timestamp());
                 print_and_write(buff, log_fp);
 
                 handle_sigterm(-1);
             }
-            printf("PRODUCER i %d RAISING FLAG TURN %d\n", i, *turn);
             flag[i] = want_in; // Raise my flag
             j = *turn; // Set local variable
 
             // wait until its my turn
-            printf("PRODUCER WAITING FOR MY TURN\n");
             while ( j != i ) {
                 j = (flag[j] != idle) ? *turn : (j + 1) % NUM_PROC;
             }
 
             // Declare intention to enter critical section
 
-            printf("PRODUCER DECLARING INTENTION TO ENTER CRITICAL SECTION\n");
             flag[i] = in_cs;
 
             // Check that no one else is in critical section
@@ -92,7 +85,6 @@ int main (int argc, char *argv[]) {
 
         // Assign turn to self and enter critical section
         *turn = i;
-        printf("PRODUCER INSIDE CRITICAL SECTION\n");
 
         /*
          *  In critical section
@@ -120,22 +112,13 @@ int main (int argc, char *argv[]) {
                 }
             }
         }
-        printf("PRODUCER EXITING CRITICAL SECTION\n");
 
-        printf("PRODUCER: printing flags\n");
-        for (k = 0; k < NUM_PROC; k++) {
-            printf("flag[%d] = %d\n", k, flag[k]);
-        }
-
-        printf("PRODUCER: j = (*turn = %d) + 1 %% %d\n", *turn, NUM_PROC);
         // Exit critical section
         j = (*turn + 1) % NUM_PROC;
-        printf("j = %d\n", j);
+
         while (flag[j] == idle) {
             j = (j + 1) % NUM_PROC;
-            printf("j = %d\n", j);
         }
-        printf("PRODUCER ASSIGNING TURN TO %d\n", j);
 
         // Assign turn to next waiting process; change own flag to idle
         *turn = j; flag[i] = idle;
