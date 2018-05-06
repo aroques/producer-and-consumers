@@ -24,9 +24,6 @@ int main (int argc, char *argv[]) {
     i = atoi(argv[1]);
     open_logfile(i);
 
-    pid_t pid = getpid();
-    printf("CONSUMER SPAWNED PID %d\n", pid);
-
     const int NUM_PROC = atoi(argv[2]);
 
     sprintf(buff, "Consumer %2d: %s Started\n", i, get_timestamp());
@@ -47,9 +44,7 @@ int main (int argc, char *argv[]) {
     int* end_program = shmem->end_program;
 
     do {
-        printf("CONSUMER END PROGRAM %d\n", *end_program);
         if (*end_program) {
-            printf("CONSUMER EXITING PROGRAM\n");
             sprintf(buff, "Consumer %2d: %s Exiting program\n", i, get_timestamp());
             print_and_write(buff, log_fp);
 
@@ -58,28 +53,23 @@ int main (int argc, char *argv[]) {
 
         do {
             if (*end_program) {
-                printf("CONSUMER EXITING PROGRAM\n");
                 sprintf(buff, "Consumer %2d: %s Exiting program\n", i, get_timestamp());
                 print_and_write(buff, log_fp);
 
                 handle_sigterm(-1);
             }
-            printf("CONSUMER i %d RAISING FLAG TURN %d\n",i, *turn);
 
             flag[i] = want_in; // Raise my flag
 
             j = *turn; // Set local variable
 
             // wait until its my turn
-            printf("CONSUMER WAITING FOR MY TURN\n");
-
             while ( j != i ) {
                 j = (flag[j] != idle) ? *turn : (j + 1) % NUM_PROC;
             }
 
             // Declare intention to enter critical section
             flag[i] = in_cs;
-            printf("CONSUMER DECLARINING INTENTION TO ENTER CRITICAL SECTION\n");
 
             // Check that no one else is in critical section
             sprintf(buff, "Consumer %2d: %s Checked\n", i, get_timestamp());
@@ -93,8 +83,6 @@ int main (int argc, char *argv[]) {
         // Assign turn to self and enter critical section
         *turn = i;
 
-        printf("CONSUMER INSIDE CRITICAL SECTION\n");
-
         for (k = 0; k < NUM_BUFFERS; k++) {
             if (buffer_flag[k] == 1) {
                 // Buffer is full so read it
@@ -105,14 +93,12 @@ int main (int argc, char *argv[]) {
                 break;
             }
         }
-        printf("CONSUMER EXITING CRITICAL SECTION\n");
 
         // Exit section
         j = (*turn + 1) % NUM_PROC;
         while (flag[j] == idle) {
             j = (j + 1) % NUM_PROC;
         }
-        printf("CONSUMER ASSIGNING TURN TO %d\n", j);
 
         // Assign turn to next waiting process; change own flag to idle
         *turn = j; flag[i] = idle;

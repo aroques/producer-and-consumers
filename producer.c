@@ -61,6 +61,7 @@ int main (int argc, char *argv[]) {
 
                 handle_sigterm(-1);
             }
+            
             flag[i] = want_in; // Raise my flag
             j = *turn; // Set local variable
 
