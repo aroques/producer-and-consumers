@@ -1,4 +1,4 @@
-# Concurrent UNIX Processes and shared memory
+# Concurrent UNIX Processes and Shared Memory
 
 ## Producer and Consumers
 
