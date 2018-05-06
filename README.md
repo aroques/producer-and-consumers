@@ -16,7 +16,7 @@ The producer when in it's critical section will fill any of the 5 buffers that a
 The consumer when in its critical section will read data from the first full buffer, then exit and get in line to read more data at a later time.
 
 ### Interprocess Communication
-When the program should terminate becuase all data from `data.txt` has been read, a SIGINT, or SIGALRM signal then an `end_program` flag in shared memory will be flipped. All processes continuously check this flag, and if it is true will terminate. 
+When the program should terminate becuase all data from `data.txt` has been read, or becuase of a SIGINT or SIGALRM signal then an `end_program` flag in shared memory will be flipped. All processes continuously check this flag, and if it is true will terminate. 
 
 ## Usage
 
