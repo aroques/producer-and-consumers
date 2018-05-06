@@ -99,7 +99,7 @@ int main (int argc, char *argv[]) {
                 
                 if ( fgets(&buffer[buffer_idx], 100, read_fp) == NULL ) {
                     // End of file
-                    sprintf(buff, "Producer   : %s \t All lines of data have ben read\n", get_timestamp());
+                    sprintf(buff, "Producer   : %s \t All lines of data have been read\n", get_timestamp());
                     print_and_write(buff, log_fp);
 
                     sprintf(buff, "Producer   : %s \t Flipping end program flag\n", get_timestamp());
